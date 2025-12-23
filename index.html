@@ -245,14 +245,24 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
+            transition: background 0.2s;
+        }
+        .modal-btn:active {
+            transform: scale(0.98);
         }
         .modal-btn.cancel {
             background: #374151;
             color: #fff;
         }
+        .modal-btn.cancel:active {
+            background: #4b5563;
+        }
         .modal-btn.confirm {
             background: #ef4444;
             color: #fff;
+        }
+        .modal-btn.confirm:active {
+            background: #dc2626;
         }
     </style>
 </head>
@@ -672,7 +682,7 @@
         // 추적 시작
         startBtn.addEventListener('click', () => {
             if (isTracking) {
-                showModal('추적 중지', '추적을 중지하시겠습니까?', stopTracking);
+                showModal('추적 중지', '추적을 중지하시겠습니까? 기록된 데이터는 유지됩니다.', stopTracking);
             } else {
                 startTracking();
             }
