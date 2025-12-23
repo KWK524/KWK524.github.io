@@ -208,62 +208,7 @@
         .hidden {
             display: none;
         }
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: #1f2937;
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            max-width: 300px;
-            width: 90%;
-        }
-        .modal-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-        }
-        .modal-buttons {
-            display: flex;
-            gap: 0.75rem;
-            margin-top: 1rem;
-        }
-        .modal-btn {
-            flex: 1;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .modal-btn:active {
-            transform: scale(0.98);
-        }
-        .modal-btn.cancel {
-            background: #374151;
-            color: #fff;
-        }
-        .modal-btn.cancel:active {
-            background: #4b5563;
-        }
-        .modal-btn.confirm {
-            background: #ef4444;
-            color: #fff;
-        }
-        .modal-btn.confirm:active {
-            background: #dc2626;
-        }
+
     </style>
 </head>
 <body>
@@ -321,16 +266,7 @@
         </div>
     </div>
 
-    <div id="modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-title" id="modalTitle">확인</div>
-            <div id="modalMessage">정말 실행하시겠습니까?</div>
-            <div class="modal-buttons">
-                <button class="modal-btn cancel" id="modalCancel">취소</button>
-                <button class="modal-btn confirm" id="modalConfirm">확인</button>
-            </div>
-        </div>
-    </div>
+
 
     <script>
         let isTracking = false;
@@ -360,32 +296,6 @@
         const locationText = document.getElementById('locationText');
         const togglePath = document.getElementById('togglePath');
         const scaleIndicator = document.getElementById('scale-indicator');
-
-        // 모달
-        const modal = document.getElementById('modal');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalMessage = document.getElementById('modalMessage');
-        const modalCancel = document.getElementById('modalCancel');
-        const modalConfirm = document.getElementById('modalConfirm');
-        let modalCallback = null;
-
-        function showModal(title, message, onConfirm) {
-            modalTitle.textContent = title;
-            modalMessage.textContent = message;
-            modalCallback = onConfirm;
-            modal.classList.remove('hidden');
-        }
-
-        function hideModal() {
-            modal.classList.add('hidden');
-            modalCallback = null;
-        }
-
-        modalCancel.addEventListener('click', hideModal);
-        modalConfirm.addEventListener('click', () => {
-            if (modalCallback) modalCallback();
-            hideModal();
-        });
 
         // 토글
         togglePath.addEventListener('click', () => {
@@ -682,7 +592,9 @@
         // 추적 시작
         startBtn.addEventListener('click', () => {
             if (isTracking) {
-                showModal('추적 중지', '추적을 중지하시겠습니까? 기록된 데이터는 유지됩니다.', stopTracking);
+                if (confirm('추적을 중지하시겠습니까?\n기록된 데이터는 유지됩니다.')) {
+                    stopTracking();
+                }
             } else {
                 startTracking();
             }
@@ -771,7 +683,7 @@
 
         // 리셋
         resetBtn.addEventListener('click', () => {
-            showModal('초기화', '모든 데이터를 삭제하시겠습니까?', () => {
+            if (confirm('모든 데이터를 삭제하시겠습니까?')) {
                 stopTracking();
                 points = [];
                 totalDistance = 0;
@@ -784,7 +696,7 @@
                 drawPath();
                 updateStats();
                 hideError();
-            });
+            }
         });
 
         // 다운로드
