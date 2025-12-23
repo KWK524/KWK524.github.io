@@ -45,12 +45,23 @@
             flex: 1;
             min-height: 300px;
             position: relative;
+            touch-action: none;
         }
         canvas {
             width: 100%;
             height: 100%;
             display: block;
-            touch-action: none;
+        }
+        #scale-indicator {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-family: monospace;
+            pointer-events: none;
         }
         .stats {
             display: grid;
@@ -81,6 +92,43 @@
         .location-label {
             color: #9ca3af;
             margin-bottom: 0.25rem;
+        }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #1f2937;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+        }
+        .toggle-label {
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #374151;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle-switch.active {
+            background: #3b82f6;
+        }
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(24px);
         }
         .controls {
             display: grid;
@@ -160,6 +208,52 @@
         .hidden {
             display: none;
         }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #1f2937;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            max-width: 300px;
+            width: 90%;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        .modal-btn {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .modal-btn.cancel {
+            background: #374151;
+            color: #fff;
+        }
+        .modal-btn.confirm {
+            background: #ef4444;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -170,6 +264,14 @@
     <div id="main">
         <div id="canvas-container">
             <canvas id="canvas"></canvas>
+            <div id="scale-indicator">축척: 계산중...</div>
+        </div>
+
+        <div class="toggle-container">
+            <span class="toggle-label">보정된 경로 표시</span>
+            <div id="togglePath" class="toggle-switch">
+                <div class="toggle-slider"></div>
+            </div>
         </div>
 
         <div class="stats">
@@ -203,9 +305,20 @@
 
         <div class="info">
             <strong>💡 사용 팁</strong><br>
-            • GPS 권한을 허용해주세요<br>
-            • 실외에서 사용하면 정확도가 높아집니다<br>
-            • 녹색=시작점, 빨강=현재위치
+            • 캔버스를 핀치/드래그로 확대/축소/이동<br>
+            • 녹색=시작점, 빨강=현재위치<br>
+            • 보정 경로는 직선화된 깔끔한 경로입니다
+        </div>
+    </div>
+
+    <div id="modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle">확인</div>
+            <div id="modalMessage">정말 실행하시겠습니까?</div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="modalCancel">취소</button>
+                <button class="modal-btn confirm" id="modalConfirm">확인</button>
+            </div>
         </div>
     </div>
 
@@ -216,6 +329,16 @@
         let startTime = null;
         let timerInterval = null;
         let totalDistance = 0;
+        let showCorrectedPath = false;
+
+        // 캔버스 제어
+        let scale = 1;
+        let offsetX = 0;
+        let offsetY = 0;
+        let isDragging = false;
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+        let lastTouchDist = 0;
 
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -225,6 +348,41 @@
         const errorDiv = document.getElementById('error');
         const locationInfo = document.getElementById('locationInfo');
         const locationText = document.getElementById('locationText');
+        const togglePath = document.getElementById('togglePath');
+        const scaleIndicator = document.getElementById('scale-indicator');
+
+        // 모달
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalCancel = document.getElementById('modalCancel');
+        const modalConfirm = document.getElementById('modalConfirm');
+        let modalCallback = null;
+
+        function showModal(title, message, onConfirm) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalCallback = onConfirm;
+            modal.classList.remove('hidden');
+        }
+
+        function hideModal() {
+            modal.classList.add('hidden');
+            modalCallback = null;
+        }
+
+        modalCancel.addEventListener('click', hideModal);
+        modalConfirm.addEventListener('click', () => {
+            if (modalCallback) modalCallback();
+            hideModal();
+        });
+
+        // 토글
+        togglePath.addEventListener('click', () => {
+            showCorrectedPath = !showCorrectedPath;
+            togglePath.classList.toggle('active');
+            drawPath();
+        });
 
         // 캔버스 크기 설정
         function resizeCanvas() {
@@ -235,6 +393,65 @@
         }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
+
+        // 터치/마우스 이벤트
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('touchstart', handleStart);
+        canvas.addEventListener('touchmove', handleMove);
+        canvas.addEventListener('touchend', handleEnd);
+        canvas.addEventListener('wheel', handleWheel, { passive: false });
+
+        function getTouchDistance(touches) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function handleStart(e) {
+            e.preventDefault();
+            if (e.touches && e.touches.length === 2) {
+                lastTouchDist = getTouchDistance(e.touches);
+            } else {
+                isDragging = true;
+                const pos = e.touches ? e.touches[0] : e;
+                lastTouchX = pos.clientX;
+                lastTouchY = pos.clientY;
+            }
+        }
+
+        function handleMove(e) {
+            e.preventDefault();
+            if (e.touches && e.touches.length === 2) {
+                const dist = getTouchDistance(e.touches);
+                const delta = dist - lastTouchDist;
+                const newScale = scale * (1 + delta * 0.01);
+                scale = Math.max(0.5, Math.min(10, newScale));
+                lastTouchDist = dist;
+                drawPath();
+            } else if (isDragging) {
+                const pos = e.touches ? e.touches[0] : e;
+                const dx = pos.clientX - lastTouchX;
+                const dy = pos.clientY - lastTouchY;
+                offsetX += dx;
+                offsetY += dy;
+                lastTouchX = pos.clientX;
+                lastTouchY = pos.clientY;
+                drawPath();
+            }
+        }
+
+        function handleEnd(e) {
+            isDragging = false;
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            scale = Math.max(0.5, Math.min(10, scale * delta));
+            drawPath();
+        }
 
         // 거리 계산 (Haversine)
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -252,11 +469,52 @@
             return R * c;
         }
 
+        // 경로 보정 (Douglas-Peucker 알고리즘 단순화)
+        function simplifyPath(points, tolerance = 0.00005) {
+            if (points.length <= 2) return points;
+
+            function perpendicularDistance(point, lineStart, lineEnd) {
+                const dx = lineEnd.lon - lineStart.lon;
+                const dy = lineEnd.lat - lineStart.lat;
+                const mag = Math.sqrt(dx * dx + dy * dy);
+                if (mag === 0) return Math.sqrt(Math.pow(point.lon - lineStart.lon, 2) + Math.pow(point.lat - lineStart.lat, 2));
+                const u = ((point.lon - lineStart.lon) * dx + (point.lat - lineStart.lat) * dy) / (mag * mag);
+                const x = lineStart.lon + u * dx;
+                const y = lineStart.lat + u * dy;
+                return Math.sqrt(Math.pow(point.lon - x, 2) + Math.pow(point.lat - y, 2));
+            }
+
+            function simplify(points, start, end, tolerance, result) {
+                let maxDist = 0;
+                let maxIndex = 0;
+
+                for (let i = start + 1; i < end; i++) {
+                    const dist = perpendicularDistance(points[i], points[start], points[end]);
+                    if (dist > maxDist) {
+                        maxDist = dist;
+                        maxIndex = i;
+                    }
+                }
+
+                if (maxDist > tolerance) {
+                    simplify(points, start, maxIndex, tolerance, result);
+                    result.push(points[maxIndex]);
+                    simplify(points, maxIndex, end, tolerance, result);
+                }
+            }
+
+            const result = [points[0]];
+            simplify(points, 0, points.length - 1, tolerance, result);
+            result.push(points[points.length - 1]);
+            return result;
+        }
+
         // 경로 그리기
         function drawPath() {
             const width = canvas.width;
             const height = canvas.height;
 
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.fillStyle = '#1a1a1a';
             ctx.fillRect(0, 0, width, height);
 
@@ -265,19 +523,27 @@
                 ctx.font = '16px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText('추적을 시작하세요', width / 2, height / 2);
+                updateScaleIndicator(0);
                 return;
             }
 
-            if (points.length === 1) {
+            const displayPoints = showCorrectedPath ? simplifyPath(points, 0.00003) : points;
+
+            if (displayPoints.length === 1) {
+                ctx.save();
+                ctx.translate(offsetX, offsetY);
+                ctx.scale(scale, scale);
                 ctx.fillStyle = '#10b981';
                 ctx.beginPath();
                 ctx.arc(width / 2, height / 2, 10, 0, 2 * Math.PI);
                 ctx.fill();
+                ctx.restore();
+                updateScaleIndicator(0);
                 return;
             }
 
-            const lats = points.map(p => p.lat);
-            const lons = points.map(p => p.lon);
+            const lats = displayPoints.map(p => p.lat);
+            const lons = displayPoints.map(p => p.lon);
             const minLat = Math.min(...lats);
             const maxLat = Math.max(...lats);
             const minLon = Math.min(...lons);
@@ -296,25 +562,43 @@
                 return { x, y };
             }
 
-            // 경로 그리기
-            ctx.strokeStyle = '#3b82f6';
-            ctx.lineWidth = 4;
+            ctx.save();
+            ctx.translate(width / 2 + offsetX, height / 2 + offsetY);
+            ctx.scale(scale, scale);
+            ctx.translate(-width / 2, -height / 2);
+
+            // 원본 경로 (연한 색)
+            if (showCorrectedPath && points.length > 1) {
+                ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                points.forEach((point, i) => {
+                    const { x, y } = toCanvas(point.lat, point.lon);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            }
+
+            // 표시 경로
+            ctx.strokeStyle = showCorrectedPath ? '#10b981' : '#3b82f6';
+            ctx.lineWidth = showCorrectedPath ? 6 : 4;
             ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+            ctx.lineJoin = showCorrectedPath ? 'bevel' : 'miter';
+            ctx.miterLimit = 4;
             ctx.beginPath();
 
-            points.forEach((point, i) => {
+            displayPoints.forEach((point, i) => {
                 const { x, y } = toCanvas(point.lat, point.lon);
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
             });
             ctx.stroke();
 
             // 시작점
-            const start = toCanvas(points[0].lat, points[0].lon);
+            const start = toCanvas(displayPoints[0].lat, displayPoints[0].lon);
             ctx.fillStyle = '#10b981';
             ctx.beginPath();
             ctx.arc(start.x, start.y, 10, 0, 2 * Math.PI);
@@ -324,7 +608,7 @@
             ctx.stroke();
 
             // 현재 위치
-            const end = toCanvas(points[points.length - 1].lat, points[points.length - 1].lon);
+            const end = toCanvas(displayPoints[displayPoints.length - 1].lat, displayPoints[displayPoints.length - 1].lon);
             ctx.fillStyle = '#ef4444';
             ctx.beginPath();
             ctx.arc(end.x, end.y, 12, 0, 2 * Math.PI);
@@ -332,6 +616,32 @@
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 2;
             ctx.stroke();
+
+            ctx.restore();
+
+            // 축척 계산
+            const metersPerPixel = (latRange * 111000) / (drawHeight * scale);
+            updateScaleIndicator(metersPerPixel);
+        }
+
+        function updateScaleIndicator(metersPerPixel) {
+            if (metersPerPixel === 0) {
+                scaleIndicator.textContent = '축척: -';
+                return;
+            }
+            
+            let scaleValue, unit;
+            if (metersPerPixel < 1) {
+                scaleValue = (metersPerPixel * 100).toFixed(0);
+                unit = 'cm/px';
+            } else if (metersPerPixel < 1000) {
+                scaleValue = metersPerPixel.toFixed(1);
+                unit = 'm/px';
+            } else {
+                scaleValue = (metersPerPixel / 1000).toFixed(2);
+                unit = 'km/px';
+            }
+            scaleIndicator.textContent = `${scaleValue}${unit}`;
         }
 
         // 통계 업데이트
@@ -362,7 +672,7 @@
         // 추적 시작
         startBtn.addEventListener('click', () => {
             if (isTracking) {
-                stopTracking();
+                showModal('추적 중지', '추적을 중지하시겠습니까?', stopTracking);
             } else {
                 startTracking();
             }
@@ -381,7 +691,6 @@
             startBtn.classList.add('tracking');
             resetBtn.disabled = true;
 
-            // 타이머 시작
             timerInterval = setInterval(updateStats, 1000);
 
             watchId = navigator.geolocation.watchPosition(
@@ -393,7 +702,6 @@
                         accuracy: position.coords.accuracy
                     };
 
-                    // 위치 정보 표시
                     locationInfo.classList.remove('hidden');
                     locationText.innerHTML = `
                         위도: ${newPoint.lat.toFixed(6)}°<br>
@@ -401,19 +709,27 @@
                         정확도: ±${newPoint.accuracy.toFixed(0)}m
                     `;
 
-                    // 거리 계산
-                    if (points.length > 0) {
+                    let shouldRecord = false;
+                    
+                    if (points.length === 0) {
+                        shouldRecord = true;
+                    } else {
                         const last = points[points.length - 1];
                         const dist = calculateDistance(last.lat, last.lon, newPoint.lat, newPoint.lon);
-                        totalDistance += dist;
+                        
+                        if (dist >= 2 || (dist >= 1 && newPoint.accuracy < 10)) {
+                            totalDistance += dist;
+                            shouldRecord = true;
+                        }
                     }
 
-                    points.push(newPoint);
-                    drawPath();
-                    updateStats();
-                    downloadBtn.disabled = false;
-
-                    console.log('GPS 위치 수신:', newPoint);
+                    if (shouldRecord) {
+                        points.push(newPoint);
+                        drawPath();
+                        updateStats();
+                        downloadBtn.disabled = false;
+                        console.log('GPS 위치 기록:', newPoint, '점 개수:', points.length);
+                    }
                 },
                 (error) => {
                     console.error('GPS 에러:', error);
@@ -445,23 +761,27 @@
 
         // 리셋
         resetBtn.addEventListener('click', () => {
-            if (confirm('모든 데이터를 삭제하시겠습니까?')) {
+            showModal('초기화', '모든 데이터를 삭제하시겠습니까?', () => {
                 stopTracking();
                 points = [];
                 totalDistance = 0;
                 startTime = null;
+                scale = 1;
+                offsetX = 0;
+                offsetY = 0;
                 locationInfo.classList.add('hidden');
                 downloadBtn.disabled = true;
                 drawPath();
                 updateStats();
                 hideError();
-            }
+            });
         });
 
         // 다운로드
         downloadBtn.addEventListener('click', () => {
             const data = {
-                points: points,
+                rawPoints: points,
+                correctedPoints: simplifyPath(points, 0.00003),
                 stats: {
                     distance: totalDistance,
                     pointCount: points.length,
@@ -477,6 +797,14 @@
             a.download = `gps-track-${Date.now()}.json`;
             a.click();
             URL.revokeObjectURL(url);
+        });
+
+        // 페이지 떠날 때 경고
+        window.addEventListener('beforeunload', (e) => {
+            if (isTracking || points.length > 0) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
         });
 
         // 초기 그리기
