@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GPS 경로 추적기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #111;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #header {
+            background: #1f2937;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        #main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            gap: 1rem;
+            overflow-y: auto;
+        }
+        #canvas-container {
+            background: #1f2937;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            flex: 1;
+            min-height: 300px;
+            position: relative;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+        .stat-card {
+            background: #1f2937;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-bottom: 0.25rem;
+        }
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+        .location-info {
+            background: #1f2937;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-family: monospace;
+        }
+        .location-label {
+            color: #9ca3af;
+            margin-bottom: 0.25rem;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 0.75rem;
+        }
+        button {
+            padding: 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        #startBtn {
+            background: #10b981;
+            color: #fff;
+        }
+        #startBtn:active {
+            background: #059669;
+        }
+        #startBtn.tracking {
+            background: #ef4444;
+        }
+        #startBtn.tracking:active {
+            background: #dc2626;
+        }
+        #resetBtn {
+            background: #374151;
+            color: #fff;
+        }
+        #resetBtn:active {
+            background: #4b5563;
+        }
+        #resetBtn:disabled {
+            background: #1f2937;
+            color: #6b7280;
+        }
+        #downloadBtn {
+            background: #3b82f6;
+            color: #fff;
+            grid-column: 1 / -1;
+        }
+        #downloadBtn:active {
+            background: #2563eb;
+        }
+        #downloadBtn:disabled {
+            background: #1f2937;
+            color: #6b7280;
+        }
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .info {
+            background: #1f2937;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+        .info strong {
+            color: #fff;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>📍 GPS 경로 추적기</h1>
+    </div>
+
+    <div id="main">
+        <div id="canvas-container">
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">기록점</div>
+                <div class="stat-value" id="pointCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">거리</div>
+                <div class="stat-value" id="distance">0.00km</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">시간</div>
+                <div class="stat-value" id="time">0:00:00</div>
+            </div>
+        </div>
+
+        <div id="locationInfo" class="location-info hidden">
+            <div class="location-label">현재 위치</div>
+            <div id="locationText"></div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn">▶ 시작</button>
+            <button id="resetBtn">↻</button>
+        </div>
+
+        <button id="downloadBtn" disabled>💾 데이터 저장</button>
+
+        <div id="error" class="error hidden"></div>
+
+        <div class="info">
+            <strong>💡 사용 팁</strong><br>
+            • GPS 권한을 허용해주세요<br>
+            • 실외에서 사용하면 정확도가 높아집니다<br>
+            • 녹색=시작점, 빨강=현재위치
+        </div>
+    </div>
+
+    <script>
+        let isTracking = false;
+        let points = [];
+        let watchId = null;
+        let startTime = null;
+        let timerInterval = null;
+        let totalDistance = 0;
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const errorDiv = document.getElementById('error');
+        const locationInfo = document.getElementById('locationInfo');
+        const locationText = document.getElementById('locationText');
+
+        // 캔버스 크기 설정
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            drawPath();
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // 거리 계산 (Haversine)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+            return R * c;
+        }
+
+        // 경로 그리기
+        function drawPath() {
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, width, height);
+
+            if (points.length === 0) {
+                ctx.fillStyle = '#6b7280';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('추적을 시작하세요', width / 2, height / 2);
+                return;
+            }
+
+            if (points.length === 1) {
+                ctx.fillStyle = '#10b981';
+                ctx.beginPath();
+                ctx.arc(width / 2, height / 2, 10, 0, 2 * Math.PI);
+                ctx.fill();
+                return;
+            }
+
+            const lats = points.map(p => p.lat);
+            const lons = points.map(p => p.lon);
+            const minLat = Math.min(...lats);
+            const maxLat = Math.max(...lats);
+            const minLon = Math.min(...lons);
+            const maxLon = Math.max(...lons);
+
+            const latRange = maxLat - minLat || 0.001;
+            const lonRange = maxLon - minLon || 0.001;
+
+            const padding = 30;
+            const drawWidth = width - 2 * padding;
+            const drawHeight = height - 2 * padding;
+
+            function toCanvas(lat, lon) {
+                const x = padding + ((lon - minLon) / lonRange) * drawWidth;
+                const y = height - padding - ((lat - minLat) / latRange) * drawHeight;
+                return { x, y };
+            }
+
+            // 경로 그리기
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+
+            points.forEach((point, i) => {
+                const { x, y } = toCanvas(point.lat, point.lon);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+
+            // 시작점
+            const start = toCanvas(points[0].lat, points[0].lon);
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.arc(start.x, start.y, 10, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 현재 위치
+            const end = toCanvas(points[points.length - 1].lat, points[points.length - 1].lon);
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(end.x, end.y, 12, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // 통계 업데이트
+        function updateStats() {
+            document.getElementById('pointCount').textContent = points.length;
+            document.getElementById('distance').textContent = (totalDistance / 1000).toFixed(2) + 'km';
+            
+            if (startTime) {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const h = Math.floor(elapsed / 3600);
+                const m = Math.floor((elapsed % 3600) / 60);
+                const s = elapsed % 60;
+                document.getElementById('time').textContent = 
+                    `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }
+        }
+
+        // 에러 표시
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorDiv.classList.add('hidden');
+        }
+
+        // 추적 시작
+        startBtn.addEventListener('click', () => {
+            if (isTracking) {
+                stopTracking();
+            } else {
+                startTracking();
+            }
+        });
+
+        function startTracking() {
+            if (!navigator.geolocation) {
+                showError('이 기기는 GPS를 지원하지 않습니다.');
+                return;
+            }
+
+            hideError();
+            isTracking = true;
+            startTime = Date.now();
+            startBtn.textContent = '⏸ 중지';
+            startBtn.classList.add('tracking');
+            resetBtn.disabled = true;
+
+            // 타이머 시작
+            timerInterval = setInterval(updateStats, 1000);
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const newPoint = {
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude,
+                        timestamp: position.timestamp,
+                        accuracy: position.coords.accuracy
+                    };
+
+                    // 위치 정보 표시
+                    locationInfo.classList.remove('hidden');
+                    locationText.innerHTML = `
+                        위도: ${newPoint.lat.toFixed(6)}°<br>
+                        경도: ${newPoint.lon.toFixed(6)}°<br>
+                        정확도: ±${newPoint.accuracy.toFixed(0)}m
+                    `;
+
+                    // 거리 계산
+                    if (points.length > 0) {
+                        const last = points[points.length - 1];
+                        const dist = calculateDistance(last.lat, last.lon, newPoint.lat, newPoint.lon);
+                        totalDistance += dist;
+                    }
+
+                    points.push(newPoint);
+                    drawPath();
+                    updateStats();
+                    downloadBtn.disabled = false;
+
+                    console.log('GPS 위치 수신:', newPoint);
+                },
+                (error) => {
+                    console.error('GPS 에러:', error);
+                    showError(`GPS 오류: ${error.message} (코드: ${error.code})`);
+                    stopTracking();
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        function stopTracking() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            isTracking = false;
+            startBtn.textContent = '▶ 시작';
+            startBtn.classList.remove('tracking');
+            resetBtn.disabled = false;
+        }
+
+        // 리셋
+        resetBtn.addEventListener('click', () => {
+            if (confirm('모든 데이터를 삭제하시겠습니까?')) {
+                stopTracking();
+                points = [];
+                totalDistance = 0;
+                startTime = null;
+                locationInfo.classList.add('hidden');
+                downloadBtn.disabled = true;
+                drawPath();
+                updateStats();
+                hideError();
+            }
+        });
+
+        // 다운로드
+        downloadBtn.addEventListener('click', () => {
+            const data = {
+                points: points,
+                stats: {
+                    distance: totalDistance,
+                    pointCount: points.length,
+                    duration: startTime ? Math.floor((Date.now() - startTime) / 1000) : 0
+                },
+                exportTime: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gps-track-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // 초기 그리기
+        drawPath();
+        updateStats();
+
+        console.log('GPS 추적기 준비 완료');
+        console.log('Geolocation 지원:', !!navigator.geolocation);
+    </script>
+</body>
+</html>
