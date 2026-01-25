@@ -16,7 +16,7 @@
         [data-theme="dark"] { --bg-color: #121212; --card-bg: #1e1e1e; --text-main: #e0e0e0; --text-sub: #a0a0a0; --accent-color: #bb86fc; --gauge-bg: #333333; --highlight: #cf6679; }
 
         body { 
-            font-family: 'Pretendard', sans-serif; 
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
             background: var(--bg-color); 
             color: var(--text-main); 
             margin: 0; 
@@ -27,7 +27,7 @@
             align-items: center;
         }
 
-        /* 반응형 레이아웃: PC(900px 이상)에서는 가로 2단, 모바일은 세로 1단 */
+        /* 반응형 레이아웃 */
         .dashboard-wrapper { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; max-width: 500px; transition: all 0.3s ease; }
         @media (min-width: 900px) {
             .dashboard-wrapper { flex-direction: row; max-width: 1000px; align-items: flex-start; }
@@ -35,19 +35,36 @@
         }
 
         .card { background: var(--card-bg); padding: 2rem; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
+        
+        /* 테마 버튼 스타일 수정 (색상 빠짐 해결) */
         .theme-selector { display: flex; justify-content: center; gap: 12px; margin-bottom: 1.5rem; }
-        .theme-btn { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); }
+        .theme-btn { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .theme-btn:hover { transform: scale(1.2); }
+        .btn-pink { background-color: #ff85c0; } 
+        .btn-skyblue { background-color: #1890ff; } 
+        .btn-white { background-color: #ffffff; } 
+        .btn-dark { background-color: #333333; }
 
         .header-title { color: var(--accent-color); font-size: 1.3rem; font-weight: 900; margin-bottom: 0.5rem; }
         .today-date { font-size: 2rem; font-weight: 800; }
-        .current-time { font-size: 1.2rem; color: var(--text-sub); margin-bottom: 1.5rem; font-family: monospace; }
+        .current-time { font-size: 1.2rem; color: var(--text-sub); margin-bottom: 1.5rem; font-variant-numeric: tabular-nums; }
 
         .gauge-container { background: var(--gauge-bg); border-radius: 50px; height: 16px; overflow: hidden; margin-bottom: 0.5rem; }
         .gauge-fill { height: 100%; background: var(--accent-color); transition: width 0.05s linear; }
-        .percent-text { font-size: 1rem; font-weight: 700; font-family: monospace; color: var(--accent-color); margin-bottom: 1.5rem; }
+        
+        /* 폰트 수정: Pretendard 기반 고정폭 숫자 (예쁨+안흔들림) */
+        .percent-text { 
+            font-size: 1.1rem; 
+            font-weight: 800; 
+            font-family: 'Pretendard', sans-serif; 
+            font-variant-numeric: tabular-nums; 
+            color: var(--accent-color); 
+            margin-bottom: 1.5rem; 
+            letter-spacing: -0.5px;
+        }
 
         #daily-section { display: none; margin: 1.2rem 0; padding: 1rem; border-radius: 16px; background: rgba(0,0,0,0.03); border: 1px dashed var(--accent-color); }
-        .daily-text { color: var(--work-green); font-size: 0.85rem; font-weight: bold; margin-top: 6px; }
+        .daily-text { color: var(--work-green); font-size: 0.85rem; font-weight: bold; margin-top: 6px; font-variant-numeric: tabular-nums; }
 
         .meal-section { margin-top: 1.2rem; padding: 1rem; border-radius: 16px; background: rgba(253, 126, 20, 0.08); border: 1px solid rgba(253, 126, 20, 0.2); text-align: left; }
         .meal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
@@ -55,7 +72,6 @@
         .meal-type { font-size: 0.7rem; background: var(--meal-orange); color: white; padding: 2px 6px; border-radius: 4px; }
         .meal-content { font-size: 0.9rem; line-height: 1.5; font-weight: 500; word-break: keep-all; }
 
-        /* 게시판 스타일 */
         .comment-card { text-align: left; }
         .comment-input-wrapper { background: rgba(0,0,0,0.03); border-radius: 12px; padding: 10px; margin-bottom: 1rem; }
         textarea { width: 100%; background: transparent; border: none; color: var(--text-main); font-family: inherit; resize: none; outline: none; min-height: 60px; }
@@ -64,7 +80,6 @@
         .comment-item { padding: 12px 0; border-bottom: 1px solid var(--gauge-bg); position: relative; }
         .comment-date { font-size: 0.75rem; color: var(--text-sub); margin-top: 5px; }
         
-        /* 좋아요 버튼 스타일 */
         .like-container { position: absolute; right: 0; bottom: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; transition: 0.2s; padding: 4px 8px; border-radius: 12px; border: 1px solid transparent; }
         .like-container:hover { background: rgba(217, 83, 79, 0.1); border-color: var(--highlight); color: var(--highlight); }
         .like-count { font-size: 0.85rem; font-weight: bold; }
@@ -123,13 +138,13 @@
 </div>
 
 <script>
-    // ⚠️ 구글 앱스 스크립트 배포 후 URL을 여기에 넣으세요!
+    // ⚠️ [중요] 2단계에서 업데이트한 구글 스크립트 URL을 여기에 다시 넣어주세요!
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwkynypFv3mDGgn9w0oWCzRzfbp0TxEib3pR6bxhDiB8-DqhM_gUpZ9JK0T7BfXBFKRkQ/exec"; 
     
     const START_DATE = new Date('2025-08-31T00:00:00+03:00');
     const END_DATE = new Date('2026-02-14T15:00:00+03:00');
 
-    // 식단 데이터 (1월 24일 ~ 30일 전체 반영)
+    // 식단 데이터 (1/24 ~ 1/30)
     const MEAL_DATA = {
         "2026-01-24": { 
             "B": "치즈에그샌드위치, 누룽지, 콩나물국, 베이컨김밥, 스크램블, 삶은계란/샐러드", 
@@ -178,41 +193,30 @@
         document.getElementById('today-date').innerText = now.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
         document.getElementById('current-time').innerText = now.toLocaleTimeString('ko-KR', { hour12: false });
         
-        // 1. 전체 진행률 (50ms 갱신, 8자리 소수점)
         const totalMs = END_DATE - START_DATE;
         const elapsedMs = now - START_DATE;
         const progress = Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100));
         document.getElementById('total-fill').style.width = progress + "%";
         document.getElementById('total-percent').innerText = progress.toFixed(8) + "%";
 
-        // 2. 업무 시간 로직 계산 (기존 로직 유지)
         let remainDays = 0, totalWorkSec = 0, isWorkingNow = false, dailyRem = 0, dailyProg = 0;
-        
-        // 남은 근무일은 '내일'부터 카운트
         let scan = new Date(now); scan.setHours(0,0,0,0);
         let tomorrow = new Date(scan); tomorrow.setDate(tomorrow.getDate() + 1);
 
         while (scan <= END_DATE) {
-            const day = scan.getDay(); // 0:일, 4:목, 5:금, 6:토
+            const day = scan.getDay(); 
             const isLast = scan.toDateString() === END_DATE.toDateString();
-            const isShort = (day === 4 || isLast); // 목요일이거나 마지막 날(2/14)은 단축
+            const isShort = (day === 4 || isLast); 
 
-            if (day !== 5) { // 금요일은 근무일 제외
-                // 남은 근무일수 (내일 날짜부터)
+            if (day !== 5) { 
                 if (scan >= tomorrow) remainDays++;
-
-                // 업무 시간 범위 설정 (점심시간 12-13 제외)
                 const shifts = [{s:6, e:12}, {s:13, e:isShort?15:17}];
-                
                 shifts.forEach(sh => {
                     let sT = new Date(scan).setHours(sh.s,0,0,0);
                     let eT = new Date(scan).setHours(sh.e,0,0,0);
                     let effS = Math.max(sT, now.getTime());
-                    // 현재 시각 이후의 업무 시간만 합산
                     if (effS < eT) totalWorkSec += (eT - effS) / 1000;
                 });
-
-                // 오늘 현재 근무 중인지 체크 (Daily Gauge)
                 if (scan.toDateString() === now.toDateString()) {
                     let dS = new Date(scan).setHours(6,0,0,0);
                     let dE = new Date(scan).setHours(isShort?15:17,0,0,0);
@@ -226,7 +230,6 @@
             scan.setDate(scan.getDate() + 1);
         }
 
-        // 결과 표시
         document.getElementById('remain-days').innerText = remainDays + "일";
         document.getElementById('remain-work-hours').innerText = 
             `${Math.floor(totalWorkSec/3600).toLocaleString()}시간 ${Math.floor((totalWorkSec%3600)/60)}분 ${Math.floor(totalWorkSec%60)}초`;
@@ -239,7 +242,7 @@
                 `오늘 퇴근까지 ${String(Math.floor(dailyRem/3600)).padStart(2,'0')}:${String(Math.floor((dailyRem%3600)/60)).padStart(2,'0')}:${String(Math.floor(dailyRem%60)).padStart(2,'0')} 남음`;
         } else { dSec.style.display = 'none'; }
 
-        // 3. 식단 표시 로직
+        // 식단
         const h = now.getHours();
         const dateStr = now.toISOString().split('T')[0];
         let targetDate = dateStr, mealType = "B", typeText = "조식 (05:00)";
@@ -258,7 +261,6 @@
         document.getElementById('next-meal-content').innerText = meal ? meal[mealType] : "식단 정보가 없습니다.";
     }
 
-    // 게시판 & 좋아요 기능
     async function loadMemos() {
         if(!SCRIPT_URL.includes("http")) return;
         try {
