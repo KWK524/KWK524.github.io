@@ -5,157 +5,196 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FGIP OJT Dashboard</title>
     <style>
+        /* 테마별 변수 설정 */
         :root {
-            --primary-blue: #007bff;
             --bg-color: #f8f9fa;
             --card-bg: #ffffff;
-            --accent-red: #d9534f;
+            --text-main: #111111;
+            --text-sub: #666666;
+            --accent-color: #007bff; /* 기본 파랑 */
+            --gauge-bg: #e9ecef;
+            --highlight: #d9534f;
             --work-green: #28a745;
         }
 
+        [data-theme="pink"] {
+            --bg-color: #fff0f6;
+            --card-bg: #ffffff;
+            --text-main: #4b162c;
+            --text-sub: #a67c8e;
+            --accent-color: #ff85c0;
+            --gauge-bg: #ffe0eb;
+        }
+
+        [data-theme="skyblue"] {
+            --bg-color: #e6f7ff;
+            --card-bg: #ffffff;
+            --text-main: #002766;
+            --text-sub: #69b1ff;
+            --accent-color: #1890ff;
+            --gauge-bg: #bae7ff;
+        }
+
+        [data-theme="white"] {
+            --bg-color: #ffffff;
+            --card-bg: #fdfdfd;
+            --text-main: #000000;
+            --text-sub: #888888;
+            --accent-color: #444444;
+            --gauge-bg: #eeeeee;
+            --highlight: #000000;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-sub: #a0a0a0;
+            --accent-color: #bb86fc;
+            --gauge-bg: #333333;
+            --highlight: #cf6679;
+        }
+
         body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            font-family: 'Pretendard', -apple-system, sans-serif;
             background-color: var(--bg-color);
+            color: var(--text-main);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            color: #333;
+            transition: all 0.3s ease;
         }
 
         .container {
             background: var(--card-bg);
             padding: 2.5rem;
             border-radius: 24px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
             text-align: center;
             width: 95%;
-            max-width: 550px;
+            max-width: 500px;
         }
 
+        /* 테마 선택 버튼 */
+        .theme-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 2rem;
+        }
+
+        .theme-btn {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .theme-btn:hover { transform: scale(1.2); }
+        .btn-pink { background: #ff85c0; }
+        .btn-skyblue { background: #1890ff; }
+        .btn-white { background: #ffffff; }
+        .btn-dark { background: #333333; }
+
         .header-title {
-            color: var(--primary-blue);
-            font-size: 1.6rem;
+            color: var(--accent-color);
+            font-size: 1.5rem;
             font-weight: 900;
-            margin-bottom: 1rem;
-            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
         }
 
         .today-date {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             font-weight: 800;
             margin-bottom: 0.2rem;
-            color: #111;
         }
 
         .current-time {
-            font-size: 1.4rem;
-            color: #444;
+            font-size: 1.3rem;
+            color: var(--text-sub);
             margin-bottom: 1.5rem;
-            font-family: 'Cascadia Code', 'Courier New', monospace;
+            font-family: 'Cascadia Code', monospace;
         }
 
-        .period-info {
-            font-size: 0.9rem;
-            color: #888;
-            margin-bottom: 1.5rem;
-        }
-
-        /* Gauge Commons */
+        /* Gauges */
         .gauge-container {
-            background: #e9ecef;
+            background: var(--gauge-bg);
             border-radius: 50px;
-            height: 20px;
-            width: 100%;
+            height: 18px;
             overflow: hidden;
-            margin-bottom: 0.6rem;
+            margin-bottom: 0.5rem;
         }
         .gauge-fill {
             height: 100%;
-            width: 0%;
+            background: var(--accent-color);
             transition: width 0.05s linear;
         }
-        .gauge-text {
+        .percent-text {
             font-size: 1.1rem;
             font-weight: 700;
-            font-family: 'Cascadia Code', 'Courier New', monospace;
+            font-family: 'Cascadia Code', monospace;
+            color: var(--accent-color);
             margin-bottom: 1.5rem;
         }
 
-        /* Total Gauge */
-        .total-fill { background: linear-gradient(90deg, #007bff, #00c6ff); }
-        .total-text { color: var(--primary-blue); }
-
-        /* Daily Gauge Section */
+        /* Daily Section */
         #daily-section {
             display: none;
-            margin-top: 1rem;
-            padding: 1.2rem;
-            background: #f0fff4;
+            margin: 1.5rem 0;
+            padding: 1rem;
             border-radius: 16px;
-            border: 1px solid #c6f6d5;
+            background: rgba(0,0,0,0.03);
+            border: 1px dashed var(--accent-color);
         }
-        .daily-label {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--work-green);
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-        .daily-fill { background: linear-gradient(90deg, #28a745, #85e085); }
-        .daily-text { color: var(--work-green); margin-bottom: 0; }
+        .daily-fill { background: var(--work-green); }
+        .daily-text { color: var(--work-green); font-size: 0.95rem; font-weight: bold; margin-top: 5px; }
 
-        /* Stats Card */
+        /* Stats */
         .stats-grid {
             display: grid;
             gap: 1rem;
-            margin-top: 1.5rem;
-            border-top: 1px solid #eee;
-            padding-top: 1.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--gauge-bg);
         }
         .stat-card {
-            background: #f8f9fa;
-            padding: 1rem 1.2rem;
-            border-radius: 16px;
             text-align: left;
+            padding: 0.8rem 1rem;
+            background: rgba(0,0,0,0.02);
+            border-radius: 12px;
         }
-        .stat-label {
-            font-size: 0.85rem;
-            color: #666;
-            margin-bottom: 0.4rem;
-            display: block;
-        }
-        .stat-value {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #222;
-        }
-        .highlight { color: var(--accent-red); }
+        .stat-label { font-size: 0.8rem; color: var(--text-sub); display: block; }
+        .stat-value { font-size: 1.1rem; font-weight: 700; }
+        .highlight { color: var(--highlight); }
     </style>
 </head>
-<body>
+<body data-theme="skyblue">
 
 <div class="container">
+    <div class="theme-selector">
+        <div class="theme-btn btn-pink" onclick="setTheme('pink')"></div>
+        <div class="theme-btn btn-skyblue" onclick="setTheme('skyblue')"></div>
+        <div class="theme-btn btn-white" onclick="setTheme('white')"></div>
+        <div class="theme-btn btn-dark" onclick="setTheme('dark')"></div>
+    </div>
+
     <div class="header-title">FGIP OJT</div>
     <div id="today-date" class="today-date"></div>
     <div id="current-time" class="current-time"></div>
     
-    <div class="period-info">
-        파견 시작: 2025.08.31 | 파견 종료: 2026.02.14
-    </div>
-
     <div class="gauge-container">
-        <div id="total-fill" class="gauge-fill total-fill"></div>
+        <div id="total-fill" class="gauge-fill"></div>
     </div>
-    <div id="total-percent" class="gauge-text total-text">0.00000000%</div>
+    <div id="total-percent" class="percent-text">0.00000000%</div>
 
     <div id="daily-section">
-        <span class="daily-label">🔋 오늘의 업무 진행도</span>
         <div class="gauge-container">
             <div id="daily-fill" class="gauge-fill daily-fill"></div>
         </div>
-        <div id="daily-remain-text" class="gauge-text daily-text">00:00:00</div>
+        <div id="daily-remain-text" class="daily-text"></div>
     </div>
 
     <div class="stats-grid">
@@ -172,7 +211,11 @@
 
 <script>
     const START_DATE = new Date('2025-08-31T00:00:00+03:00');
-    const END_DATE = new Date('2026-02-14T15:00:00+03:00'); 
+    const END_DATE = new Date('2026-02-14T15:00:00+03:00');
+
+    function setTheme(theme) {
+        document.body.setAttribute('data-theme', theme);
+    }
 
     function getGMT3Now() {
         const now = new Date();
@@ -182,45 +225,39 @@
     function update() {
         const now = getGMT3Now();
 
-        // 1. 기본 날짜/시간
-        const dateOpt = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-        document.getElementById('today-date').innerText = now.toLocaleDateString('ko-KR', dateOpt);
-        document.getElementById('current-time').innerText = 
-            now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " (GMT+3)";
+        // 1. 날짜 및 시간
+        document.getElementById('today-date').innerText = now.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
+        document.getElementById('current-time').innerText = now.toLocaleTimeString('ko-KR', { hour12: false }) + " (GMT+3)";
 
-        // 2. 전체 진행률 (소수점 8자리)
+        // 2. 전체 진행률 (8자리)
         const totalMs = END_DATE - START_DATE;
         const elapsedMs = now - START_DATE;
-        let progress = Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100));
+        const progress = Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100));
         document.getElementById('total-fill').style.width = progress + "%";
         document.getElementById('total-percent').innerText = progress.toFixed(8) + "% 경과";
 
-        // 3. 변수 초기화
+        // 3. 로직 계산
         let remainDays = 0;
         let totalWorkSec = 0;
         let isWorkingNow = false;
         let dailyRemainingSec = 0;
         let dailyProgress = 0;
 
-        let iter = new Date(now);
-        iter.setHours(0,0,0,0);
-        
-        let tomorrow = new Date(now);
+        const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(0,0,0,0);
 
-        // 종료일까지 순회
-        let scan = new Date(iter);
+        let scan = new Date(now);
+        scan.setHours(0,0,0,0);
+
         while (scan <= END_DATE) {
             const day = scan.getDay(); // 0:일, 4:목, 5:금, 6:토
             const isLastDay = scan.toDateString() === END_DATE.toDateString();
-            const isShortDay = (day === 4 || isLastDay); // 목요일 또는 마지막 날(2/14)
+            const isShortDay = (day === 4 || isLastDay);
 
             if (day !== 5) {
-                // [남은 근무일] 오늘 제외 내일부터
                 if (scan >= tomorrow) remainDays++;
 
-                // [업무 시간 계산]
                 const shifts = [
                     { s: 6, e: 12 },
                     { s: 13, e: isShortDay ? 15 : 17 }
@@ -230,28 +267,24 @@
                 const dayEnd = new Date(scan).setHours(isShortDay ? 15 : 17, 0, 0, 0);
 
                 shifts.forEach(shift => {
-                    let sTime = new Date(scan).setHours(shift.s, 0, 0, 0);
-                    let eTime = new Date(scan).setHours(shift.e, 0, 0, 0);
-                    let effectiveStart = Math.max(sTime, now.getTime());
-                    if (effectiveStart < eTime) {
-                        totalWorkSec += (eTime - effectiveStart) / 1000;
-                    }
+                    let sT = new Date(scan).setHours(shift.s, 0, 0, 0);
+                    let eT = new Date(scan).setHours(shift.e, 0, 0, 0);
+                    let effS = Math.max(sT, now.getTime());
+                    if (effS < eT) totalWorkSec += (eT - effS) / 1000;
                 });
 
-                // [오늘의 근무진행률 로직]
                 if (scan.toDateString() === now.toDateString()) {
                     if (now.getTime() >= dayStart && now.getTime() < dayEnd) {
                         isWorkingNow = true;
                         dailyProgress = ((now.getTime() - dayStart) / (dayEnd - dayStart)) * 100;
-                        dailyRemainingSec = Math.max(0, (dayEnd - now.getTime()) / 1000);
+                        dailyRemainingSec = (dayEnd - now.getTime()) / 1000;
                     }
                 }
             }
             scan.setDate(scan.getDate() + 1);
-            scan.setHours(0,0,0,0);
         }
 
-        // UI 업데이트: 남은 근무 정보
+        // 4. UI 업데이트
         document.getElementById('remain-days').innerText = remainDays + "일";
         
         const h = Math.floor(totalWorkSec / 3600);
@@ -259,23 +292,19 @@
         const s = Math.floor(totalWorkSec % 60);
         document.getElementById('remain-work-hours').innerText = `${h.toLocaleString()}시간 ${m}분 ${s}초`;
 
-        // UI 업데이트: 오늘의 업무 섹션
-        const dailySection = document.getElementById('daily-section');
+        const dailySec = document.getElementById('daily-section');
         if (isWorkingNow) {
-            dailySection.style.display = 'block';
+            dailySec.style.display = 'block';
             document.getElementById('daily-fill').style.width = dailyProgress + "%";
-            
             const dh = Math.floor(dailyRemainingSec / 3600);
             const dm = Math.floor((dailyRemainingSec % 3600) / 60);
             const ds = Math.floor(dailyRemainingSec % 60);
-            document.getElementById('daily-remain-text').innerText = 
-                `오늘 퇴근까지 남은 시간: ${String(dh).padStart(2, '0')}:${String(dm).padStart(2, '0')}:${String(ds).padStart(2, '0')}`;
+            document.getElementById('daily-remain-text').innerText = `퇴근까지 ${String(dh).padStart(2,'0')}:${String(dm).padStart(2,'0')}:${String(ds).padStart(2,'0')} 남음`;
         } else {
-            dailySection.style.display = 'none';
+            dailySec.style.display = 'none';
         }
     }
 
-    // 50ms 주기로 업데이트 (초당 20회)
     setInterval(update, 50);
     update();
 </script>
