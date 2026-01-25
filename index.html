@@ -5,170 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FGIP OJT Dashboard</title>
     <style>
-        /* 테마별 변수 설정 */
         :root {
-            --bg-color: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-main: #111111;
-            --text-sub: #666666;
-            --accent-color: #007bff; /* 기본 파랑 */
-            --gauge-bg: #e9ecef;
-            --highlight: #d9534f;
-            --work-green: #28a745;
+            --bg-color: #f8f9fa; --card-bg: #ffffff; --text-main: #111111;
+            --text-sub: #666666; --accent-color: #007bff; --gauge-bg: #e9ecef;
+            --highlight: #d9534f; --work-green: #28a745;
         }
+        [data-theme="pink"] { --bg-color: #fff0f6; --card-bg: #ffffff; --text-main: #4b162c; --text-sub: #a67c8e; --accent-color: #ff85c0; --gauge-bg: #ffe0eb; }
+        [data-theme="skyblue"] { --bg-color: #e6f7ff; --card-bg: #ffffff; --text-main: #002766; --text-sub: #69b1ff; --accent-color: #1890ff; --gauge-bg: #bae7ff; }
+        [data-theme="white"] { --bg-color: #ffffff; --card-bg: #fdfdfd; --text-main: #000000; --text-sub: #888888; --accent-color: #444444; --gauge-bg: #eeeeee; --highlight: #333; }
+        [data-theme="dark"] { --bg-color: #121212; --card-bg: #1e1e1e; --text-main: #e0e0e0; --text-sub: #a0a0a0; --accent-color: #bb86fc; --gauge-bg: #333333; --highlight: #cf6679; }
 
-        [data-theme="pink"] {
-            --bg-color: #fff0f6;
-            --card-bg: #ffffff;
-            --text-main: #4b162c;
-            --text-sub: #a67c8e;
-            --accent-color: #ff85c0;
-            --gauge-bg: #ffe0eb;
-        }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; margin: 0; padding: 2rem 0; transition: 0.3s; }
+        .container { background: var(--card-bg); padding: 2.5rem; border-radius: 24px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); text-align: center; width: 95%; max-width: 500px; }
+        
+        .theme-selector { display: flex; justify-content: center; gap: 12px; margin-bottom: 2rem; }
+        .theme-btn { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); }
+        .btn-pink { background: #ff85c0; } .btn-skyblue { background: #1890ff; } .btn-white { background: #ffffff; } .btn-dark { background: #333333; }
 
-        [data-theme="skyblue"] {
-            --bg-color: #e6f7ff;
-            --card-bg: #ffffff;
-            --text-main: #002766;
-            --text-sub: #69b1ff;
-            --accent-color: #1890ff;
-            --gauge-bg: #bae7ff;
-        }
+        .header-title { color: var(--accent-color); font-size: 1.5rem; font-weight: 900; margin-bottom: 0.5rem; }
+        .today-date { font-size: 2.2rem; font-weight: 800; }
+        .current-time { font-size: 1.3rem; color: var(--text-sub); margin-bottom: 1.5rem; font-family: monospace; }
 
-        [data-theme="white"] {
-            --bg-color: #ffffff;
-            --card-bg: #fdfdfd;
-            --text-main: #000000;
-            --text-sub: #888888;
-            --accent-color: #444444;
-            --gauge-bg: #eeeeee;
-            --highlight: #000000;
-        }
+        .gauge-container { background: var(--gauge-bg); border-radius: 50px; height: 18px; overflow: hidden; margin-bottom: 0.5rem; }
+        .gauge-fill { height: 100%; background: var(--accent-color); transition: width 0.05s linear; }
+        .percent-text { font-size: 1.1rem; font-weight: 700; font-family: monospace; color: var(--accent-color); margin-bottom: 1.5rem; }
 
-        [data-theme="dark"] {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-main: #e0e0e0;
-            --text-sub: #a0a0a0;
-            --accent-color: #bb86fc;
-            --gauge-bg: #333333;
-            --highlight: #cf6679;
-        }
+        #daily-section { display: none; margin: 1.5rem 0; padding: 1.2rem; border-radius: 16px; background: rgba(0,0,0,0.03); border: 1px dashed var(--accent-color); }
+        .daily-text { color: var(--work-green); font-size: 0.9rem; font-weight: bold; margin-top: 8px; }
 
-        body {
-            font-family: 'Pretendard', -apple-system, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            transition: all 0.3s ease;
-        }
+        .stats-grid { display: grid; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--gauge-bg); }
+        .stat-card { text-align: left; padding: 1rem; background: rgba(0,0,0,0.02); border-radius: 12px; }
+        .stat-label { font-size: 0.85rem; color: var(--text-sub); display: block; }
+        .stat-value { font-size: 1.15rem; font-weight: 700; }
 
-        .container {
-            background: var(--card-bg);
-            padding: 2.5rem;
-            border-radius: 24px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
-            text-align: center;
-            width: 95%;
-            max-width: 500px;
-        }
-
-        /* 테마 선택 버튼 */
-        .theme-selector {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 2rem;
-        }
-
-        .theme-btn {
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            border: 2px solid #ddd;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .theme-btn:hover { transform: scale(1.2); }
-        .btn-pink { background: #ff85c0; }
-        .btn-skyblue { background: #1890ff; }
-        .btn-white { background: #ffffff; }
-        .btn-dark { background: #333333; }
-
-        .header-title {
-            color: var(--accent-color);
-            font-size: 1.5rem;
-            font-weight: 900;
-            margin-bottom: 0.5rem;
-        }
-
-        .today-date {
-            font-size: 2.2rem;
-            font-weight: 800;
-            margin-bottom: 0.2rem;
-        }
-
-        .current-time {
-            font-size: 1.3rem;
-            color: var(--text-sub);
-            margin-bottom: 1.5rem;
-            font-family: 'Cascadia Code', monospace;
-        }
-
-        /* Gauges */
-        .gauge-container {
-            background: var(--gauge-bg);
-            border-radius: 50px;
-            height: 18px;
-            overflow: hidden;
-            margin-bottom: 0.5rem;
-        }
-        .gauge-fill {
-            height: 100%;
-            background: var(--accent-color);
-            transition: width 0.05s linear;
-        }
-        .percent-text {
-            font-size: 1.1rem;
-            font-weight: 700;
-            font-family: 'Cascadia Code', monospace;
-            color: var(--accent-color);
-            margin-bottom: 1.5rem;
-        }
-
-        /* Daily Section */
-        #daily-section {
-            display: none;
-            margin: 1.5rem 0;
-            padding: 1rem;
-            border-radius: 16px;
-            background: rgba(0,0,0,0.03);
-            border: 1px dashed var(--accent-color);
-        }
-        .daily-fill { background: var(--work-green); }
-        .daily-text { color: var(--work-green); font-size: 0.95rem; font-weight: bold; margin-top: 5px; }
-
-        /* Stats */
-        .stats-grid {
-            display: grid;
-            gap: 1rem;
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--gauge-bg);
-        }
-        .stat-card {
-            text-align: left;
-            padding: 0.8rem 1rem;
-            background: rgba(0,0,0,0.02);
-            border-radius: 12px;
-        }
-        .stat-label { font-size: 0.8rem; color: var(--text-sub); display: block; }
-        .stat-value { font-size: 1.1rem; font-weight: 700; }
-        .highlight { color: var(--highlight); }
+        /* 공유 메모장 디자인 */
+        .comment-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid var(--gauge-bg); text-align: left; }
+        .comment-input-wrapper { background: rgba(0,0,0,0.03); border-radius: 12px; padding: 10px; margin-bottom: 1rem; }
+        textarea { width: 100%; background: transparent; border: none; color: var(--text-main); font-family: inherit; resize: none; outline: none; min-height: 60px; }
+        .save-btn { background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; float: right; }
+        .comment-list { list-style: none; padding: 0; margin-top: 4rem; }
+        .comment-item { padding: 12px 0; border-bottom: 1px solid var(--gauge-bg); font-size: 0.95rem; }
+        .comment-date { font-size: 0.75rem; color: var(--text-sub); margin-top: 5px; }
     </style>
 </head>
 <body data-theme="skyblue">
@@ -185,128 +62,121 @@
     <div id="today-date" class="today-date"></div>
     <div id="current-time" class="current-time"></div>
     
-    <div class="gauge-container">
-        <div id="total-fill" class="gauge-fill"></div>
-    </div>
+    <div class="gauge-container"><div id="total-fill" class="gauge-fill"></div></div>
     <div id="total-percent" class="percent-text">0.00000000%</div>
 
     <div id="daily-section">
-        <div class="gauge-container">
-            <div id="daily-fill" class="gauge-fill daily-fill"></div>
-        </div>
+        <div class="gauge-container"><div id="daily-fill" class="gauge-fill" style="background:var(--work-green)"></div></div>
         <div id="daily-remain-text" class="daily-text"></div>
     </div>
 
     <div class="stats-grid">
-        <div class="stat-card">
-            <span class="stat-label">📅 남은 근무일</span>
-            <span id="remain-days" class="stat-value">0일</span>
+        <div class="stat-card"><span class="stat-label">📅 남은 근무일</span><span id="remain-days" class="stat-value">0일</span></div>
+        <div class="stat-card"><span class="stat-label">⏰ 총 남은 순수 업무 시간</span><span id="remain-work-hours" class="stat-value" style="color:var(--highlight)">0시간 0분 0초</span></div>
+    </div>
+
+    <div class="comment-section">
+        <div style="font-weight: 800; margin-bottom: 1rem;">💬 실시간 공유 게시판</div>
+        <div class="comment-input-wrapper">
+            <textarea id="memo-input" placeholder="여기에 글을 남기면 모두에게 공유됩니다..."></textarea>
+            <button class="save-btn" onclick="saveMemo()">등록</button>
+            <div style="clear:both;"></div>
         </div>
-        <div class="stat-card">
-            <span class="stat-label">⏰ 총 남은 순수 업무 시간</span>
-            <span id="remain-work-hours" class="stat-value highlight">0시간 0분 0초</span>
-        </div>
+        <div id="loading" style="display:none; font-size: 0.8rem; color: var(--text-sub);">불러오는 중...</div>
+        <ul id="memo-list" class="comment-list"></ul>
     </div>
 </div>
-    
+
 <script>
+    // ⚠️ 2번 단계에서 발급받을 주소를 여기에 넣으세요!
+    const SCRIPT_URL = "여기에_구글_스크립트_URL을_넣으세요"; 
+
     const START_DATE = new Date('2025-08-31T00:00:00+03:00');
     const END_DATE = new Date('2026-02-14T15:00:00+03:00');
 
-    function setTheme(theme) {
-        document.body.setAttribute('data-theme', theme);
-    }
+    function setTheme(t) { document.body.setAttribute('data-theme', t); localStorage.setItem('theme', t); }
+    if(localStorage.getItem('theme')) setTheme(localStorage.getItem('theme'));
 
-    function getGMT3Now() {
-        const now = new Date();
-        return new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (3 * 3600000));
-    }
+    function getGMT3Now() { const n = new Date(); return new Date(n.getTime() + (n.getTimezoneOffset() * 60000) + (3 * 3600000)); }
 
     function update() {
         const now = getGMT3Now();
-
-        // 1. 날짜 및 시간
         document.getElementById('today-date').innerText = now.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
-        document.getElementById('current-time').innerText = now.toLocaleTimeString('ko-KR', { hour12: false }) + " (GMT+3)";
+        document.getElementById('current-time').innerText = now.toLocaleTimeString('ko-KR', { hour12: false });
 
-        // 2. 전체 진행률 (8자리)
-        const totalMs = END_DATE - START_DATE;
-        const elapsedMs = now - START_DATE;
-        const progress = Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100));
+        const progress = Math.max(0, Math.min(100, ((now - START_DATE) / (END_DATE - START_DATE)) * 100));
         document.getElementById('total-fill').style.width = progress + "%";
-        document.getElementById('total-percent').innerText = progress.toFixed(8) + "% 경과";
+        document.getElementById('total-percent').innerText = progress.toFixed(8) + "%";
 
-        // 3. 로직 계산
-        let remainDays = 0;
-        let totalWorkSec = 0;
-        let isWorkingNow = false;
-        let dailyRemainingSec = 0;
-        let dailyProgress = 0;
-
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0,0,0,0);
-
-        let scan = new Date(now);
-        scan.setHours(0,0,0,0);
+        let remainDays = 0, totalWorkSec = 0, isWorkingNow = false, dailyRem = 0, dailyProg = 0;
+        let scan = new Date(now); scan.setHours(0,0,0,0);
+        let tomorrow = new Date(scan); tomorrow.setDate(tomorrow.getDate() + 1);
 
         while (scan <= END_DATE) {
-            const day = scan.getDay(); // 0:일, 4:목, 5:금, 6:토
-            const isLastDay = scan.toDateString() === END_DATE.toDateString();
-            const isShortDay = (day === 4 || isLastDay);
-
+            const day = scan.getDay(), isLast = scan.toDateString() === END_DATE.toDateString(), isShort = (day === 4 || isLast);
             if (day !== 5) {
                 if (scan >= tomorrow) remainDays++;
-
-                const shifts = [
-                    { s: 6, e: 12 },
-                    { s: 13, e: isShortDay ? 15 : 17 }
-                ];
-
-                const dayStart = new Date(scan).setHours(6, 0, 0, 0);
-                const dayEnd = new Date(scan).setHours(isShortDay ? 15 : 17, 0, 0, 0);
-
-                shifts.forEach(shift => {
-                    let sT = new Date(scan).setHours(shift.s, 0, 0, 0);
-                    let eT = new Date(scan).setHours(shift.e, 0, 0, 0);
+                const shifts = [{s:6, e:12}, {s:13, e:isShort?15:17}];
+                shifts.forEach(sh => {
+                    let sT = new Date(scan).setHours(sh.s,0,0,0), eT = new Date(scan).setHours(sh.e,0,0,0);
                     let effS = Math.max(sT, now.getTime());
                     if (effS < eT) totalWorkSec += (eT - effS) / 1000;
                 });
-
                 if (scan.toDateString() === now.toDateString()) {
-                    if (now.getTime() >= dayStart && now.getTime() < dayEnd) {
-                        isWorkingNow = true;
-                        dailyProgress = ((now.getTime() - dayStart) / (dayEnd - dayStart)) * 100;
-                        dailyRemainingSec = (dayEnd - now.getTime()) / 1000;
-                    }
+                    let dS = new Date(scan).setHours(6,0,0,0), dE = new Date(scan).setHours(isShort?15:17,0,0,0);
+                    if (now >= dS && now < dE) { isWorkingNow = true; dailyProg = ((now - dS)/(dE - dS))*100; dailyRem = (dE - now)/1000; }
                 }
             }
             scan.setDate(scan.getDate() + 1);
         }
-
-        // 4. UI 업데이트
         document.getElementById('remain-days').innerText = remainDays + "일";
-        
-        const h = Math.floor(totalWorkSec / 3600);
-        const m = Math.floor((totalWorkSec % 3600) / 60);
-        const s = Math.floor(totalWorkSec % 60);
-        document.getElementById('remain-work-hours').innerText = `${h.toLocaleString()}시간 ${m}분 ${s}초`;
+        document.getElementById('remain-work-hours').innerText = `${Math.floor(totalWorkSec/3600).toLocaleString()}시간 ${Math.floor((totalWorkSec%3600)/60)}분 ${Math.floor(totalWorkSec%60)}초`;
 
-        const dailySec = document.getElementById('daily-section');
+        const dSec = document.getElementById('daily-section');
         if (isWorkingNow) {
-            dailySec.style.display = 'block';
-            document.getElementById('daily-fill').style.width = dailyProgress + "%";
-            const dh = Math.floor(dailyRemainingSec / 3600);
-            const dm = Math.floor((dailyRemainingSec % 3600) / 60);
-            const ds = Math.floor(dailyRemainingSec % 60);
-            document.getElementById('daily-remain-text').innerText = `퇴근까지 ${String(dh).padStart(2,'0')}:${String(dm).padStart(2,'0')}:${String(ds).padStart(2,'0')} 남음`;
-        } else {
-            dailySec.style.display = 'none';
-        }
+            dSec.style.display = 'block'; document.getElementById('daily-fill').style.width = dailyProg + "%";
+            document.getElementById('daily-remain-text').innerText = `퇴근까지 ${String(Math.floor(dailyRem/3600)).padStart(2,'0')}:${String(Math.floor((dailyRem%3600)/60)).padStart(2,'0')}:${String(Math.floor(dailyRem%60)).padStart(2,'0')} 남음`;
+        } else dSec.style.display = 'none';
+    }
+
+    // --- 실시간 공유 메모장 기능 ---
+    async function loadMemos() {
+        if(!SCRIPT_URL.includes("http")) return;
+        document.getElementById('loading').style.display = 'block';
+        try {
+            const res = await fetch(SCRIPT_URL);
+            const data = await res.json();
+            const list = document.getElementById('memo-list');
+            list.innerHTML = data.map(m => `
+                <li class="comment-item">
+                    <div>${m.text}</div>
+                    <div class="comment-date">${m.date}</div>
+                </li>
+            `).reverse().join('');
+        } catch (e) { console.error("불러오기 실패"); }
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    async function saveMemo() {
+        const input = document.getElementById('memo-input');
+        const text = input.value.trim();
+        if(!text || !SCRIPT_URL.includes("http")) return;
+        
+        input.disabled = true;
+        try {
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ text: text })
+            });
+            input.value = '';
+            await loadMemos();
+        } catch (e) { alert("전송 실패"); }
+        input.disabled = false;
     }
 
     setInterval(update, 50);
-    update();
+    setInterval(loadMemos, 10000); // 10초마다 새 댓글 확인
+    update(); loadMemos();
 </script>
 
 </body>
