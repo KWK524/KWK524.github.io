@@ -3,127 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FGIP OJT Unified Dashboard</title>
+    <title>FGIP OJT Dashboard</title>
     <style>
         :root {
-            --bg-color: #f0f2f5; --card-bg: #ffffff; --text-main: #1c1e21;
-            --text-sub: #606770; --accent-color: #007bff; --gauge-bg: #e9ecef;
+            --bg-color: #f8f9fa; --card-bg: #ffffff; --text-main: #111111;
+            --text-sub: #666666; --accent-color: #007bff; --gauge-bg: #e9ecef;
             --highlight: #d9534f; --work-green: #28a745; --meal-orange: #fd7e14;
         }
         [data-theme="pink"] { --bg-color: #fff0f6; --card-bg: #ffffff; --text-main: #4b162c; --text-sub: #a67c8e; --accent-color: #ff85c0; --gauge-bg: #ffe0eb; }
         [data-theme="skyblue"] { --bg-color: #e6f7ff; --card-bg: #ffffff; --text-main: #002766; --text-sub: #69b1ff; --accent-color: #1890ff; --gauge-bg: #bae7ff; }
+        [data-theme="white"] { --bg-color: #ffffff; --card-bg: #fdfdfd; --text-main: #000000; --text-sub: #888888; --accent-color: #444444; --gauge-bg: #eeeeee; --highlight: #333; }
         [data-theme="dark"] { --bg-color: #121212; --card-bg: #1e1e1e; --text-main: #e0e0e0; --text-sub: #a0a0a0; --accent-color: #bb86fc; --gauge-bg: #333333; --highlight: #cf6679; }
 
-        body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; transition: 0.3s; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; margin: 0; padding: 2rem 0; transition: 0.3s; }
+        .container { background: var(--card-bg); padding: 2.5rem; border-radius: 24px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); text-align: center; width: 95%; max-width: 500px; }
         
-        /* 3단 그리드 설정 (PC) */
-        .dashboard-grid { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 20px; 
-            max-width: 1400px; 
-            margin: 0 auto; 
-        }
+        .theme-selector { display: flex; justify-content: center; gap: 12px; margin-bottom: 2rem; }
+        .theme-btn { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); }
+        .btn-pink { background: #ff85c0; } .btn-skyblue { background: #1890ff; } .btn-white { background: #ffffff; } .btn-dark { background: #333333; }
 
-        /* 모바일 대응 (화면 작아지면 1열로) */
-        @media (max-width: 1100px) { .dashboard-grid { grid-template-columns: 1fr; max-width: 500px; } }
+        .header-title { color: var(--accent-color); font-size: 1.5rem; font-weight: 900; margin-bottom: 0.5rem; }
+        .today-date { font-size: 2.2rem; font-weight: 800; }
+        .current-time { font-size: 1.3rem; color: var(--text-sub); margin-bottom: 1.5rem; font-family: monospace; }
 
-        .card { background: var(--card-bg); border-radius: 20px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
-        .theme-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; grid-column: 1 / -1; }
-        .theme-btn { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); }
+        .gauge-container { background: var(--gauge-bg); border-radius: 50px; height: 18px; overflow: hidden; margin-bottom: 0.5rem; }
+        .gauge-fill { height: 100%; background: var(--accent-color); transition: width 0.05s linear; }
+        .percent-text { font-size: 1.1rem; font-weight: 700; font-family: monospace; color: var(--accent-color); margin-bottom: 1.5rem; }
 
-        /* 공통 스타일 */
-        h2 { font-size: 1.1rem; margin-top: 0; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 8px; }
-        .gauge-container { background: var(--gauge-bg); border-radius: 50px; height: 14px; overflow: hidden; margin-bottom: 8px; }
-        .gauge-fill { height: 100%; background: var(--accent-color); transition: width 0.1s linear; }
+        #daily-section { display: none; margin: 1.5rem 0; padding: 1.2rem; border-radius: 16px; background: rgba(0,0,0,0.03); border: 1px dashed var(--accent-color); }
+        .daily-text { color: var(--work-green); font-size: 0.9rem; font-weight: bold; margin-top: 8px; }
 
-        /* 카드 1: 현황 & 식단 */
-        .today-date { font-size: 1.8rem; font-weight: 800; margin-bottom: 5px; }
-        .current-time { font-size: 1.1rem; color: var(--text-sub); margin-bottom: 15px; font-family: monospace; }
-        .meal-box { margin-top: 15px; padding: 15px; border-radius: 12px; background: rgba(253, 126, 20, 0.08); border: 1px solid rgba(253, 126, 20, 0.1); }
-        .meal-type { font-size: 0.7rem; background: var(--meal-orange); color: white; padding: 2px 6px; border-radius: 4px; margin-bottom: 5px; display: inline-block; }
+        .stats-grid { display: grid; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--gauge-bg); }
+        .stat-card { text-align: left; padding: 1rem; background: rgba(0,0,0,0.02); border-radius: 12px; }
+        .stat-label { font-size: 0.85rem; color: var(--text-sub); display: block; }
+        .stat-value { font-size: 1.15rem; font-weight: 700; }
 
-        /* 카드 2: 일정표(캘린더) */
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .cal-day { font-size: 0.75rem; text-align: center; padding: 5px; border-radius: 6px; cursor: pointer; position: relative; background: rgba(0,0,0,0.02); }
-        .cal-day.has-event::after { content: ''; position: absolute; bottom: 3px; left: 50%; width: 4px; height: 4px; background: var(--highlight); border-radius: 50%; transform: translateX(-50%); }
-        .cal-day:hover { background: var(--gauge-bg); }
-        .event-list { margin-top: 15px; font-size: 0.85rem; max-height: 150px; overflow-y: auto; }
-        .event-item { padding: 5px 0; border-bottom: 1px solid var(--gauge-bg); }
+        /* 식단 섹션 */
+        .meal-section { margin-top: 1.5rem; padding: 1.2rem; border-radius: 16px; background: rgba(253, 126, 20, 0.08); border: 1px solid rgba(253, 126, 20, 0.2); text-align: left; }
+        .meal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+        .meal-title { font-weight: 800; color: var(--meal-orange); font-size: 1rem; }
+        .meal-type { font-size: 0.75rem; background: var(--meal-orange); color: white; padding: 2px 8px; border-radius: 4px; }
+        .meal-content { font-size: 0.95rem; line-height: 1.6; word-break: keep-all; font-weight: 500; }
 
-        /* 카드 3: 게시판 */
+        /* 공유 메모장 */
+        .comment-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid var(--gauge-bg); text-align: left; }
         .comment-input-wrapper { background: rgba(0,0,0,0.03); border-radius: 12px; padding: 10px; margin-bottom: 1rem; }
-        textarea { width: 100%; background: transparent; border: none; color: var(--text-main); font-family: inherit; resize: none; outline: none; min-height: 50px; }
-        .comment-item { padding: 12px 0; border-bottom: 1px solid var(--gauge-bg); position: relative; }
-        .like-btn { position: absolute; right: 0; bottom: 10px; cursor: pointer; color: var(--text-sub); font-size: 0.85rem; display: flex; align-items: center; gap: 4px; border: 1px solid var(--gauge-bg); padding: 2px 8px; border-radius: 20px; transition: 0.2s; }
-        .like-btn:hover { background: #fff0f6; color: #ff85c0; border-color: #ff85c0; }
-        .save-btn { background: var(--accent-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; float: right; font-size: 0.85rem; }
+        textarea { width: 100%; background: transparent; border: none; color: var(--text-main); font-family: inherit; resize: none; outline: none; min-height: 60px; }
+        .save-btn { background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; float: right; }
+        .comment-list { list-style: none; padding: 0; margin-top: 3.5rem; }
+        .comment-item { padding: 12px 0; border-bottom: 1px solid var(--gauge-bg); font-size: 0.95rem; }
+        .comment-date { font-size: 0.75rem; color: var(--text-sub); margin-top: 5px; }
     </style>
 </head>
-<body>
+<body data-theme="skyblue">
 
-<div class="theme-selector">
-    <div class="theme-btn" style="background:#ff85c0" onclick="setTheme('pink')"></div>
-    <div class="theme-btn" style="background:#1890ff" onclick="setTheme('skyblue')"></div>
-    <div class="theme-btn" style="background:#ffffff" onclick="setTheme('white')"></div>
-    <div class="theme-btn" style="background:#333333" onclick="setTheme('dark')"></div>
-</div>
+<div class="container">
+    <div class="theme-selector">
+        <div class="theme-btn btn-pink" onclick="setTheme('pink')"></div>
+        <div class="theme-btn btn-skyblue" onclick="setTheme('skyblue')"></div>
+        <div class="theme-btn btn-white" onclick="setTheme('white')"></div>
+        <div class="theme-btn btn-dark" onclick="setTheme('dark')"></div>
+    </div>
 
-<div class="dashboard-grid">
-    <div class="card">
-        <h2>📊 OJT Status</h2>
-        <div id="today-date" class="today-date"></div>
-        <div id="current-time" class="current-time"></div>
-        <div class="gauge-container"><div id="total-fill" class="gauge-fill"></div></div>
-        <div id="total-percent" style="font-weight: bold; color: var(--accent-color); margin-bottom: 15px;">0.00%</div>
-        
-        <div id="daily-section" style="display:none; margin-bottom: 15px;">
-            <div class="gauge-container" style="height: 8px;"><div id="daily-fill" class="gauge-fill" style="background:var(--work-green)"></div></div>
-            <div id="daily-remain-text" style="font-size: 0.8rem; color: var(--work-green); font-weight: bold;"></div>
-        </div>
+    <div class="header-title">FGIP OJT</div>
+    <div id="today-date" class="today-date"></div>
+    <div id="current-time" class="current-time"></div>
+    
+    <div class="gauge-container"><div id="total-fill" class="gauge-fill"></div></div>
+    <div id="total-percent" class="percent-text">0.00000000%</div>
 
-        <div class="meal-box">
+    <div id="daily-section">
+        <div class="gauge-container"><div id="daily-fill" class="gauge-fill" style="background:var(--work-green)"></div></div>
+        <div id="daily-remain-text" class="daily-text"></div>
+    </div>
+
+    <div class="meal-section">
+        <div class="meal-header">
+            <span class="meal-title">🍴 다음 식사 메뉴</span>
             <span id="next-meal-type" class="meal-type">조식</span>
-            <div id="next-meal-content" style="font-size: 0.9rem; font-weight: 500;">메뉴를 불러오는 중...</div>
         </div>
+        <div id="next-meal-content" class="meal-content">메뉴를 불러오는 중...</div>
     </div>
 
-    <div class="card">
-        <div class="calendar-header">
-            <h2 style="margin:0;">📅 공유 일정표</h2>
-            <button class="save-btn" style="float:none;" onclick="addEvent()">추가</button>
-        </div>
-        <div id="cal-month" style="font-size: 0.9rem; font-weight: bold; margin-bottom: 10px;">2026년 1월</div>
-        <div class="cal-grid" id="calendar-body">
-            </div>
-        <div class="event-list" id="event-list">
-            <div style="color:var(--text-sub); text-align:center; padding-top:20px;">날짜를 선택해 일정을 확인하세요.</div>
-        </div>
+    <div class="stats-grid">
+        <div class="stat-card"><span class="stat-label">📅 남은 근무일</span><span id="remain-days" class="stat-value">0일</span></div>
+        <div class="stat-card"><span class="stat-label">⏰ 총 남은 순수 업무 시간</span><span id="remain-work-hours" class="stat-value" style="color:var(--highlight)">0시간 0분 0초</span></div>
     </div>
 
-    <div class="card">
-        <h2>💬 실시간 게시판</h2>
+    <div class="comment-section">
+        <div style="font-weight: 800; margin-bottom: 1rem;">💬 실시간 공유 게시판</div>
         <div class="comment-input-wrapper">
-            <textarea id="memo-input" placeholder="함께 나눌 이야기를 적어주세요..."></textarea>
+            <textarea id="memo-input" placeholder="자유롭게 한마디..."></textarea>
             <button class="save-btn" onclick="saveMemo()">등록</button>
             <div style="clear:both;"></div>
         </div>
-        <div id="memo-list" style="overflow-y: auto; flex-grow: 1; max-height: 400px;"></div>
+        <ul id="memo-list" class="comment-list"></ul>
     </div>
 </div>
 
 <script>
-    // ⚠️ 구글 스크립트 URL을 입력하세요.
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwkynypFv3mDGgn9w0oWCzRzfbp0TxEib3pR6bxhDiB8-DqhM_gUpZ9JK0T7BfXBFKRkQ/exec"; 
     const START_DATE = new Date('2025-08-31T00:00:00+03:00');
     const END_DATE = new Date('2026-02-14T15:00:00+03:00');
 
-    // 식단 데이터 (전달해주신 이미지 기반)
+    // 식단 데이터
     const MEAL_DATA = {
-        "2026-01-24": { "B": "치즈에그샌드위치, 누룽지, 콩나물국, 베이컨김밥, 스크램블", "L": "갈치조림, 갈비찜, 된장찌개, 계란말이, 감자샐러드", "D": "짬뽕, 후라이치킨, 떡갈비, 찐만두, 어묵전" },
-        "2026-01-25": { "B": "BLT샌드위치, 햄전, 불고기, 양배추무침, 계란후라이", "L": "닭볶음, 오징어튀김, 소고기미역국, 두부조림, 미역줄기", "D": "불고기(테이블), 치킨카츠, 북어볶음, 김치전, 생선전" },
-        "2026-01-26": { "B": "컵라면, 참치샌드위치, 누룽지, 소고기김밥, 계란후라이", "L": "양념치킨, 생선전, 어묵국, 잡채, 도라지나물", "D": "설렁탕, 육전, 새우튀김, 김치볶음, 양념간장" }
+        "2026-01-24": { "B": "치즈에그샌드위치, 누룽지, 콩나물국, 베이컨김밥, 스크램블, 삶은계란/샐러드", "L": "갈치조림, 갈비찜, 된장찌개, 계란말이, 감자샐러드, 무생채", "D": "짬뽕, 후라이치킨, 떡갈비, 찐만두, 어묵전, 단무지" },
+        "2026-01-25": { "B": "BLT샌드위치, 햄전, 불고기, 양배추무침, 계란후라이, 삶은계란/샐러드", "L": "닭볶음, 오징어튀김, 소고기미역국, 두부조림, 미역줄기, 배추겉절이", "D": "불고기(테이블), 치킨카츠, 북어볶음, 김치전, 생선전, 감자조림" },
+        "2026-01-26": { "B": "컵라면, 참치샌드위치, 누룽지, 소고기김밥, 계란후라이, 삶은계란/샐러드", "L": "양념치킨, 생선전, 어묵국, 잡채, 도라지나물, 고구마샐러드", "D": "설렁탕, 육전, 새우튀김, 김치볶음, 양념간장, 오이무침" },
+        "2026-01-27": { "B": "김치샌드위치, 어묵국, 호박볶음, 장조림, 계란말이, 삶은계란/샐러드", "L": "오징어볶음, 너비아니, 닭곰탕, 두부구이, 멸치볶음, 도라지무침", "D": "물냉면, 후라이치킨, 소꼬리곰탕, 해물파전, 연어샐러드, 감자채볶음" },
+        "2026-01-28": { "B": "햄버거, 누룽지, 새우시금치국, 치즈김밥, 계란후라이, 삶은계란/샐러드", "L": "비빔메밀국수, 닭갈비, 칠리새우, 김치찌개, 계란조림, 감자조림", "D": "소고기(테이블), 생선튀김, 부추전, 감자찌개, 멸치볶음, 파저리" },
+        "2026-01-29": { "B": "햄버거, 새우볶음, 오징어무국, 도시락김, 계란찜, 삶은계란/샐러드", "L": "불고기, 고등어구이, 해물탕, 마파두부, 감자채볶음, 진미채", "D": "회덮밥, 미소국, 치킨카츠, 새우완자전, 어묵볶음, 호박볶음" },
+        "2026-01-30": { "B": "두부조림, 누룽지, 시금치무침, 구이김, 계란말이, 삶은계란/샐러드", "L": "신라면, 김밥, 햄버거, 후라이윙치킨, 감자구이, 단무지", "D": "치킨카츠, 배추국, 오징어부추전, 양배추볶음, 김치" }
     };
 
     function setTheme(t) { document.body.setAttribute('data-theme', t); localStorage.setItem('theme', t); }
@@ -136,74 +127,97 @@
         document.getElementById('today-date').innerText = now.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
         document.getElementById('current-time').innerText = now.toLocaleTimeString('ko-KR', { hour12: false });
 
-        // 식단 업데이트
-        const h = now.getHours();
-        const dateStr = now.toISOString().split('T')[0];
-        let targetDate = dateStr, mealType = "B", typeText = "조식 (05:00)";
-        if (h < 6) { mealType = "B"; typeText = "오늘 조식"; }
-        else if (h < 13) { mealType = "L"; typeText = "오늘 중식"; }
-        else if (h < 20) { mealType = "D"; typeText = "오늘 석식"; }
-        else { const tmr = new Date(now); tmr.setDate(tmr.getDate()+1); targetDate = tmr.toISOString().split('T')[0]; mealType = "B"; typeText = "내일 조식"; }
-        document.getElementById('next-meal-type').innerText = typeText;
-        document.getElementById('next-meal-content').innerText = MEAL_DATA[targetDate] ? MEAL_DATA[targetDate][mealType] : "식단 정보가 없습니다.";
+        // 식단 업데이트 로직
+        updateMeal(now);
 
-        // 진행률 업데이트
         const progress = Math.max(0, Math.min(100, ((now - START_DATE) / (END_DATE - START_DATE)) * 100));
         document.getElementById('total-fill').style.width = progress + "%";
         document.getElementById('total-percent').innerText = progress.toFixed(8) + "%";
 
-        // 근무 시간 체크 로직 (생략 - 이전과 동일)
+        let remainDays = 0, totalWorkSec = 0, isWorkingNow = false, dailyRem = 0, dailyProg = 0;
+        let scan = new Date(now); scan.setHours(0,0,0,0);
+        let tomorrow = new Date(scan); tomorrow.setDate(tomorrow.getDate() + 1);
+
+        while (scan <= END_DATE) {
+            const day = scan.getDay(), isLast = scan.toDateString() === END_DATE.toDateString(), isShort = (day === 4 || isLast);
+            if (day !== 5) {
+                if (scan >= tomorrow) remainDays++;
+                const shifts = [{s:6, e:12}, {s:13, e:isShort?15:17}];
+                shifts.forEach(sh => {
+                    let sT = new Date(scan).setHours(sh.s,0,0,0), eT = new Date(scan).setHours(sh.e,0,0,0);
+                    let effS = Math.max(sT, now.getTime());
+                    if (effS < eT) totalWorkSec += (eT - effS) / 1000;
+                });
+                if (scan.toDateString() === now.toDateString()) {
+                    let dS = new Date(scan).setHours(6,0,0,0), dE = new Date(scan).setHours(isShort?15:17,0,0,0);
+                    if (now >= dS && now < dE) { isWorkingNow = true; dailyProg = ((now - dS)/(dE - dS))*100; dailyRem = (dE - now)/1000; }
+                }
+            }
+            scan.setDate(scan.getDate() + 1);
+        }
+        document.getElementById('remain-days').innerText = remainDays + "일";
+        document.getElementById('remain-work-hours').innerText = `${Math.floor(totalWorkSec/3600).toLocaleString()}시간 ${Math.floor((totalWorkSec%3600)/60)}분 ${Math.floor(totalWorkSec%60)}초`;
+
+        const dSec = document.getElementById('daily-section');
+        if (isWorkingNow) {
+            dSec.style.display = 'block'; document.getElementById('daily-fill').style.width = dailyProg + "%";
+            document.getElementById('daily-remain-text').innerText = `퇴근까지 ${String(Math.floor(dailyRem/3600)).padStart(2,'0')}:${String(Math.floor((dailyRem%3600)/60)).padStart(2,'0')}:${String(Math.floor(dailyRem%60)).padStart(2,'0')} 남음`;
+        } else dSec.style.display = 'none';
     }
 
-    // --- 게시판 & 좋아요 기능 ---
+    // 다음 식사 표시 로직
+    function updateMeal(now) {
+        const h = now.getHours();
+        const dateStr = now.toISOString().split('T')[0];
+        let targetDate = dateStr;
+        let mealType = "B"; 
+        let typeText = "조식 (05:00)";
+
+        if (h < 6) { mealType = "B"; typeText = "오늘 조식"; }
+        else if (h < 13) { mealType = "L"; typeText = "오늘 중식"; }
+        else if (h < 20) { mealType = "D"; typeText = "오늘 석식"; }
+        else { 
+            // 밤 8시 이후엔 내일 조식 표시
+            const tmr = new Date(now); tmr.setDate(tmr.getDate() + 1);
+            targetDate = tmr.toISOString().split('T')[0];
+            mealType = "B"; typeText = "내일 조식";
+        }
+
+        const meal = MEAL_DATA[targetDate];
+        document.getElementById('next-meal-type').innerText = typeText;
+        document.getElementById('next-meal-content').innerText = meal ? meal[mealType] : "식단 정보가 없습니다.";
+    }
+
     async function loadMemos() {
         if(!SCRIPT_URL.includes("http")) return;
         try {
-            const res = await fetch(SCRIPT_URL + "?action=getMemos");
+            const res = await fetch(SCRIPT_URL);
             const data = await res.json();
             const list = document.getElementById('memo-list');
-            list.innerHTML = data.map((m, idx) => `
-                <div class="comment-item">
-                    <div style="padding-right: 60px;">${m.text}</div>
-                    <div style="font-size: 0.7rem; color: var(--text-sub); margin-top:5px;">${m.date}</div>
-                    <div class="like-btn" onclick="likeMemo(${m.id})">❤️ <span>${m.likes || 0}</span></div>
-                </div>
+            list.innerHTML = data.map(m => `
+                <li class="comment-item">
+                    <div>${m.text}</div>
+                    <div class="comment-date">${m.date}</div>
+                </li>
             `).reverse().join('');
-        } catch (e) {}
+        } catch (e) { console.error("불러오기 실패"); }
     }
 
     async function saveMemo() {
         const input = document.getElementById('memo-input');
-        if(!input.value.trim()) return;
-        const text = input.value; input.value = '';
-        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "addMemo", text: text }) });
-        loadMemos();
+        const text = input.value.trim();
+        if(!text || !SCRIPT_URL.includes("http")) return;
+        input.disabled = true;
+        try {
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ text: text }) });
+            input.value = ''; await loadMemos();
+        } catch (e) { alert("전송 실패"); }
+        input.disabled = false;
     }
 
-    async function likeMemo(id) {
-        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "likeMemo", id: id }) });
-        loadMemos();
-    }
-
-    // --- 캘린더 생성 (간단 버전) ---
-    function initCalendar() {
-        const body = document.getElementById('calendar-body');
-        const days = ['일','월','화','수','목','금','토'];
-        let html = days.map(d => `<div style="font-size:0.7rem; font-weight:bold; text-align:center;">${d}</div>`).join('');
-        for(let i=1; i<=31; i++) {
-            html += `<div class="cal-day ${i===25?'has-event':''}" onclick="showEvent(${i})">${i}</div>`;
-        }
-        body.innerHTML = html;
-    }
-
-    function addEvent() {
-        const msg = prompt("등록할 일정을 입력하세요 (예: 1/26 14:00 주간 회의)");
-        if(msg) alert("일정이 서버에 저장되었습니다. (구글 시트 연동 필요)");
-    }
-
-    setInterval(update, 100);
-    setInterval(loadMemos, 1000); // 1초마다 실시간 업데이트
-    initCalendar(); update(); loadMemos();
+    setInterval(update, 50);
+    setInterval(loadMemos, 1000); // 업데이트 주기 1초로 단축
+    update(); loadMemos();
 </script>
 
 </body>
