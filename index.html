@@ -8,7 +8,7 @@
         :root {
             --bg-color: #f8f9fa; --card-bg: #ffffff; --text-main: #111111;
             --text-sub: #666666; --accent-color: #007bff; --gauge-bg: #e9ecef;
-            --highlight: #d9534f; --work-green: #28a745;
+            --highlight: #d9534f; --work-green: #28a745; --meal-orange: #fd7e14;
         }
         [data-theme="pink"] { --bg-color: #fff0f6; --card-bg: #ffffff; --text-main: #4b162c; --text-sub: #a67c8e; --accent-color: #ff85c0; --gauge-bg: #ffe0eb; }
         [data-theme="skyblue"] { --bg-color: #e6f7ff; --card-bg: #ffffff; --text-main: #002766; --text-sub: #69b1ff; --accent-color: #1890ff; --gauge-bg: #bae7ff; }
@@ -38,12 +38,19 @@
         .stat-label { font-size: 0.85rem; color: var(--text-sub); display: block; }
         .stat-value { font-size: 1.15rem; font-weight: 700; }
 
-        /* 공유 메모장 디자인 */
+        /* 식단 섹션 */
+        .meal-section { margin-top: 1.5rem; padding: 1.2rem; border-radius: 16px; background: rgba(253, 126, 20, 0.08); border: 1px solid rgba(253, 126, 20, 0.2); text-align: left; }
+        .meal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+        .meal-title { font-weight: 800; color: var(--meal-orange); font-size: 1rem; }
+        .meal-type { font-size: 0.75rem; background: var(--meal-orange); color: white; padding: 2px 8px; border-radius: 4px; }
+        .meal-content { font-size: 0.95rem; line-height: 1.6; word-break: keep-all; font-weight: 500; }
+
+        /* 공유 메모장 */
         .comment-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid var(--gauge-bg); text-align: left; }
         .comment-input-wrapper { background: rgba(0,0,0,0.03); border-radius: 12px; padding: 10px; margin-bottom: 1rem; }
         textarea { width: 100%; background: transparent; border: none; color: var(--text-main); font-family: inherit; resize: none; outline: none; min-height: 60px; }
         .save-btn { background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; float: right; }
-        .comment-list { list-style: none; padding: 0; margin-top: 4rem; }
+        .comment-list { list-style: none; padding: 0; margin-top: 3.5rem; }
         .comment-item { padding: 12px 0; border-bottom: 1px solid var(--gauge-bg); font-size: 0.95rem; }
         .comment-date { font-size: 0.75rem; color: var(--text-sub); margin-top: 5px; }
     </style>
@@ -70,6 +77,14 @@
         <div id="daily-remain-text" class="daily-text"></div>
     </div>
 
+    <div class="meal-section">
+        <div class="meal-header">
+            <span class="meal-title">🍴 다음 식사 메뉴</span>
+            <span id="next-meal-type" class="meal-type">조식</span>
+        </div>
+        <div id="next-meal-content" class="meal-content">메뉴를 불러오는 중...</div>
+    </div>
+
     <div class="stats-grid">
         <div class="stat-card"><span class="stat-label">📅 남은 근무일</span><span id="remain-days" class="stat-value">0일</span></div>
         <div class="stat-card"><span class="stat-label">⏰ 총 남은 순수 업무 시간</span><span id="remain-work-hours" class="stat-value" style="color:var(--highlight)">0시간 0분 0초</span></div>
@@ -78,21 +93,29 @@
     <div class="comment-section">
         <div style="font-weight: 800; margin-bottom: 1rem;">💬 실시간 공유 게시판</div>
         <div class="comment-input-wrapper">
-            <textarea id="memo-input" placeholder="여기에 글을 남기면 모두에게 공유됩니다..."></textarea>
+            <textarea id="memo-input" placeholder="자유롭게 한마디..."></textarea>
             <button class="save-btn" onclick="saveMemo()">등록</button>
             <div style="clear:both;"></div>
         </div>
-        <div id="loading" style="display:none; font-size: 0.8rem; color: var(--text-sub);">불러오는 중...</div>
         <ul id="memo-list" class="comment-list"></ul>
     </div>
 </div>
 
 <script>
-    // ⚠️ 2번 단계에서 발급받을 주소를 여기에 넣으세요!
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwkynypFv3mDGgn9w0oWCzRzfbp0TxEib3pR6bxhDiB8-DqhM_gUpZ9JK0T7BfXBFKRkQ/exec"; 
-
     const START_DATE = new Date('2025-08-31T00:00:00+03:00');
     const END_DATE = new Date('2026-02-14T15:00:00+03:00');
+
+    // 식단 데이터
+    const MEAL_DATA = {
+        "2026-01-24": { "B": "치즈에그샌드위치, 누룽지, 콩나물국, 베이컨김밥, 스크램블, 삶은계란/샐러드", "L": "갈치조림, 갈비찜, 된장찌개, 계란말이, 감자샐러드, 무생채", "D": "짬뽕, 후라이치킨, 떡갈비, 찐만두, 어묵전, 단무지" },
+        "2026-01-25": { "B": "BLT샌드위치, 햄전, 불고기, 양배추무침, 계란후라이, 삶은계란/샐러드", "L": "닭볶음, 오징어튀김, 소고기미역국, 두부조림, 미역줄기, 배추겉절이", "D": "불고기(테이블), 치킨카츠, 북어볶음, 김치전, 생선전, 감자조림" },
+        "2026-01-26": { "B": "컵라면, 참치샌드위치, 누룽지, 소고기김밥, 계란후라이, 삶은계란/샐러드", "L": "양념치킨, 생선전, 어묵국, 잡채, 도라지나물, 고구마샐러드", "D": "설렁탕, 육전, 새우튀김, 김치볶음, 양념간장, 오이무침" },
+        "2026-01-27": { "B": "김치샌드위치, 어묵국, 호박볶음, 장조림, 계란말이, 삶은계란/샐러드", "L": "오징어볶음, 너비아니, 닭곰탕, 두부구이, 멸치볶음, 도라지무침", "D": "물냉면, 후라이치킨, 소꼬리곰탕, 해물파전, 연어샐러드, 감자채볶음" },
+        "2026-01-28": { "B": "햄버거, 누룽지, 새우시금치국, 치즈김밥, 계란후라이, 삶은계란/샐러드", "L": "비빔메밀국수, 닭갈비, 칠리새우, 김치찌개, 계란조림, 감자조림", "D": "소고기(테이블), 생선튀김, 부추전, 감자찌개, 멸치볶음, 파저리" },
+        "2026-01-29": { "B": "햄버거, 새우볶음, 오징어무국, 도시락김, 계란찜, 삶은계란/샐러드", "L": "불고기, 고등어구이, 해물탕, 마파두부, 감자채볶음, 진미채", "D": "회덮밥, 미소국, 치킨카츠, 새우완자전, 어묵볶음, 호박볶음" },
+        "2026-01-30": { "B": "두부조림, 누룽지, 시금치무침, 구이김, 계란말이, 삶은계란/샐러드", "L": "신라면, 김밥, 햄버거, 후라이윙치킨, 감자구이, 단무지", "D": "치킨카츠, 배추국, 오징어부추전, 양배추볶음, 김치" }
+    };
 
     function setTheme(t) { document.body.setAttribute('data-theme', t); localStorage.setItem('theme', t); }
     if(localStorage.getItem('theme')) setTheme(localStorage.getItem('theme'));
@@ -103,6 +126,9 @@
         const now = getGMT3Now();
         document.getElementById('today-date').innerText = now.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
         document.getElementById('current-time').innerText = now.toLocaleTimeString('ko-KR', { hour12: false });
+
+        // 식단 업데이트 로직
+        updateMeal(now);
 
         const progress = Math.max(0, Math.min(100, ((now - START_DATE) / (END_DATE - START_DATE)) * 100));
         document.getElementById('total-fill').style.width = progress + "%";
@@ -139,10 +165,31 @@
         } else dSec.style.display = 'none';
     }
 
-    // --- 실시간 공유 메모장 기능 ---
+    // 다음 식사 표시 로직
+    function updateMeal(now) {
+        const h = now.getHours();
+        const dateStr = now.toISOString().split('T')[0];
+        let targetDate = dateStr;
+        let mealType = "B"; 
+        let typeText = "조식 (05:00)";
+
+        if (h < 6) { mealType = "B"; typeText = "오늘 조식"; }
+        else if (h < 13) { mealType = "L"; typeText = "오늘 중식"; }
+        else if (h < 20) { mealType = "D"; typeText = "오늘 석식"; }
+        else { 
+            // 밤 8시 이후엔 내일 조식 표시
+            const tmr = new Date(now); tmr.setDate(tmr.getDate() + 1);
+            targetDate = tmr.toISOString().split('T')[0];
+            mealType = "B"; typeText = "내일 조식";
+        }
+
+        const meal = MEAL_DATA[targetDate];
+        document.getElementById('next-meal-type').innerText = typeText;
+        document.getElementById('next-meal-content').innerText = meal ? meal[mealType] : "식단 정보가 없습니다.";
+    }
+
     async function loadMemos() {
         if(!SCRIPT_URL.includes("http")) return;
-        document.getElementById('loading').style.display = 'block';
         try {
             const res = await fetch(SCRIPT_URL);
             const data = await res.json();
@@ -154,28 +201,22 @@
                 </li>
             `).reverse().join('');
         } catch (e) { console.error("불러오기 실패"); }
-        document.getElementById('loading').style.display = 'none';
     }
 
     async function saveMemo() {
         const input = document.getElementById('memo-input');
         const text = input.value.trim();
         if(!text || !SCRIPT_URL.includes("http")) return;
-        
         input.disabled = true;
         try {
-            await fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ text: text })
-            });
-            input.value = '';
-            await loadMemos();
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ text: text }) });
+            input.value = ''; await loadMemos();
         } catch (e) { alert("전송 실패"); }
         input.disabled = false;
     }
 
     setInterval(update, 50);
-    setInterval(loadMemos, 10000); // 10초마다 새 댓글 확인
+    setInterval(loadMemos, 1000); // 업데이트 주기 1초로 단축
     update(); loadMemos();
 </script>
 
