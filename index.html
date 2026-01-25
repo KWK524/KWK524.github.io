@@ -1,1026 +1,284 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GPS 경로 추적기 v1.4</title>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#111;color:#fff;overflow:hidden;height:100vh;display:flex;flex-direction:column}
-    #header{background:#1f2937;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-    h1{font-size:1.5rem;font-weight:700}
-    #main{flex:1;display:flex;flex-direction:column;padding:1rem;gap:1rem;overflow-y:auto}
-    #canvas-container{background:#1f2937;border-radius:.5rem;overflow:hidden;flex:1;min-height:300px;position:relative;touch-action:none}
-    canvas{width:100%;height:100%;display:block}
-    #scale-indicator{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.7);padding:.5rem;border-radius:.25rem;font-size:.75rem;font-family:monospace;pointer-events:none;white-space:nowrap}
-    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
-    .stat-card{background:#1f2937;padding:.75rem;border-radius:.5rem}
-    .stat-label{font-size:.75rem;color:#9ca3af;margin-bottom:.25rem}
-    .stat-value{font-size:1.25rem;font-weight:700}
-    .location-info{background:#1f2937;padding:.75rem;border-radius:.5rem;font-size:.875rem;font-family:monospace}
-    .location-label{color:#9ca3af;margin-bottom:.25rem}
-    .toggle-container{display:flex;align-items:center;justify-content:space-between;background:#1f2937;padding:.75rem;border-radius:.5rem}
-    .toggle-label{font-size:.875rem;color:#9ca3af}
-    .toggle-switch{position:relative;width:50px;height:26px;background:#374151;border-radius:13px;cursor:pointer;transition:background .3s}
-    .toggle-switch.active{background:#3b82f6}
-    .toggle-slider{position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .3s}
-    .toggle-switch.active .toggle-slider{transform:translateX(24px)}
-    .controls{display:grid;grid-template-columns:2fr 1fr;gap:.75rem}
-    button{padding:1rem;border:none;border-radius:.5rem;font-size:1.125rem;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.5rem}
-    button:active{transform:scale(.98)}
-    #startBtn{background:#10b981;color:#fff}
-    #startBtn:active{background:#059669}
-    #startBtn.tracking{background:#ef4444}
-    #startBtn.tracking:active{background:#dc2626}
-    #resetBtn{background:#374151;color:#fff}
-    #resetBtn:active{background:#4b5563}
-    #resetBtn:disabled{background:#1f2937;color:#6b7280;cursor:not-allowed}
-    #downloadBtn{background:#3b82f6;color:#fff;grid-column:1 / -1}
-    #downloadBtn:active{background:#2563eb}
-    #downloadBtn:disabled{background:#1f2937;color:#6b7280;cursor:not-allowed}
-    .error{background:rgba(239,68,68,.2);border:1px solid #ef4444;color:#fca5a5;padding:.75rem;border-radius:.5rem;font-size:.875rem}
-    .warn{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.7);color:#fcd34d;padding:.75rem;border-radius:.5rem;font-size:.875rem}
-    .info{background:#1f2937;padding:.75rem;border-radius:.5rem;font-size:.75rem;color:#9ca3af}
-    .info strong{color:#fff}
-    .hidden{display:none}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FGIP OJT Dashboard</title>
+    <style>
+        :root {
+            --primary-blue: #007bff;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --accent-red: #d9534f;
+            --work-green: #28a745;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+            text-align: center;
+            width: 95%;
+            max-width: 550px;
+        }
+
+        .header-title {
+            color: var(--primary-blue);
+            font-size: 1.6rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .today-date {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.2rem;
+            color: #111;
+        }
+
+        .current-time {
+            font-size: 1.4rem;
+            color: #444;
+            margin-bottom: 1.5rem;
+            font-family: 'Cascadia Code', 'Courier New', monospace;
+        }
+
+        .period-info {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Gauge Commons */
+        .gauge-container {
+            background: #e9ecef;
+            border-radius: 50px;
+            height: 20px;
+            width: 100%;
+            overflow: hidden;
+            margin-bottom: 0.6rem;
+        }
+        .gauge-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.05s linear;
+        }
+        .gauge-text {
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'Cascadia Code', 'Courier New', monospace;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Total Gauge */
+        .total-fill { background: linear-gradient(90deg, #007bff, #00c6ff); }
+        .total-text { color: var(--primary-blue); }
+
+        /* Daily Gauge Section */
+        #daily-section {
+            display: none;
+            margin-top: 1rem;
+            padding: 1.2rem;
+            background: #f0fff4;
+            border-radius: 16px;
+            border: 1px solid #c6f6d5;
+        }
+        .daily-label {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--work-green);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .daily-fill { background: linear-gradient(90deg, #28a745, #85e085); }
+        .daily-text { color: var(--work-green); margin-bottom: 0; }
+
+        /* Stats Card */
+        .stats-grid {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            border-top: 1px solid #eee;
+            padding-top: 1.5rem;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 1rem 1.2rem;
+            border-radius: 16px;
+            text-align: left;
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 0.4rem;
+            display: block;
+        }
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #222;
+        }
+        .highlight { color: var(--accent-red); }
+    </style>
 </head>
 <body>
-  <div id="header"><h1>📍 GPS 경로 추적기</h1></div>
 
-  <div id="main">
-    <div id="canvas-container">
-      <canvas id="canvas"></canvas>
-      <div id="scale-indicator">축척: -</div>
+<div class="container">
+    <div class="header-title">FGIP OJT</div>
+    <div id="today-date" class="today-date"></div>
+    <div id="current-time" class="current-time"></div>
+    
+    <div class="period-info">
+        파견 시작: 2025.08.31 | 파견 종료: 2026.02.14
     </div>
 
-    <div class="toggle-container">
-      <span class="toggle-label">보정된 경로 표시</span>
-      <div id="togglePath" class="toggle-switch active" role="switch" aria-checked="true" aria-label="보정된 경로 표시 토글">
-        <div class="toggle-slider"></div>
-      </div>
+    <div class="gauge-container">
+        <div id="total-fill" class="gauge-fill total-fill"></div>
+    </div>
+    <div id="total-percent" class="gauge-text total-text">0.00000000%</div>
+
+    <div id="daily-section">
+        <span class="daily-label">🔋 오늘의 업무 진행도</span>
+        <div class="gauge-container">
+            <div id="daily-fill" class="gauge-fill daily-fill"></div>
+        </div>
+        <div id="daily-remain-text" class="gauge-text daily-text">00:00:00</div>
     </div>
 
-    <div class="stats">
-      <div class="stat-card">
-        <div class="stat-label">기록점</div>
-        <div class="stat-value" id="pointCount">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">거리</div>
-        <div class="stat-value" id="distance">0.00km</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">시간</div>
-        <div class="stat-value" id="time">0:00:00</div>
-      </div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-label">📅 남은 근무일</span>
+            <span id="remain-days" class="stat-value">0일</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">⏰ 총 남은 순수 업무 시간</span>
+            <span id="remain-work-hours" class="stat-value highlight">0시간 0분 0초</span>
+        </div>
     </div>
+</div>
 
-    <div id="locationInfo" class="location-info hidden">
-      <div class="location-label">현재 위치</div>
-      <div id="locationText"></div>
-    </div>
+<script>
+    const START_DATE = new Date('2025-08-31T00:00:00+03:00');
+    const END_DATE = new Date('2026-02-14T15:00:00+03:00'); 
 
-    <div class="controls">
-      <button id="startBtn" aria-label="추적 시작/중지">▶ 시작</button>
-      <button id="resetBtn" disabled aria-label="데이터 초기화">↻</button>
-    </div>
-
-    <button id="downloadBtn" disabled aria-label="데이터 저장">💾 데이터 저장</button>
-
-    <div id="error" class="error hidden"></div>
-    <div id="warn" class="warn hidden"></div>
-
-    <div class="info">
-      <strong>💡 사용 팁</strong><br />
-      • 캔버스: 핀치/휠로 확대·축소, 드래그로 이동<br />
-      • 녹색=시작점, 빨강=현재위치<br />
-      • 보정 경로: 단순화 + 코너 강조 + (가능한 범위에서) 직교 스냅 + 교차점 표시
-    </div>
-  </div>
-
-  <script>
-    // =========================
-    // 설정(현장 환경에 맞게 조정)
-    // =========================
-    const CFG = {
-      // 품질 필터
-      maxAccuracyM: 25,          // 이 값보다 accuracy가 크면 누적/기록에서 제외(튐 방지)
-      maxJumpSpeedMps: 20,       // 비정상 점프 제거(초당 20m 이상 ≒ 72km/h 이상) 필요 시 상향
-      minDtForSpeedCheckS: 0.5,  // 너무 짧은 dt는 speed 계산 안정성 낮아서 제외
-
-      // 기록(샘플링) 조건
-      recordMinMoveM: 2,         // 기본 2m 이상 이동 시 기록
-      recordMinMoveAccGoodM: 1,  // 정확도 좋을 때(accuracy<10m) 1m 이상도 기록
-      goodAccuracyM: 10,
-
-      // 보정(단순화/코너/직교스냅)
-      simplifyToleranceM: 4.0,   // RDP tolerance(미터 단위)
-      cornerAngleDeg: 35,        // 코너로 판단할 방향 변화(각도) 기준
-      snapToOrthogonalDeg: 20,   // 0/90/180/270에 가까우면 스냅(이 각도 이내)
-      enableOrthogonalSnap: true,
-      enableIntersectionMarks: true,
-
-      // 렌더 스로틀
-      renderFps: 30
-    };
-
-    // =========================
-    // 상태
-    // =========================
-    let isTracking = false;
-
-    // 기록용 점(표시/저장 rawPoints)
-    let points = [];
-
-    // 누적 거리용 마지막 "유효" 점(기록 여부와 무관하게 업데이트)
-    let lastAccumPoint = null;
-
-    // 기록용 마지막 점(샘플링 기준점)
-    let lastRecordedPoint = null;
-
-    let watchId = null;
-    let startTime = null;
-    let timerInterval = null;
-
-    let totalDistance = 0; // meters
-
-    // UI 토글(기본 true)
-    let showCorrectedPath = true;
-
-    // 캔버스 제어
-    let scale = 1;
-    let offsetX = 0;
-    let offsetY = 0;
-    let isDragging = false;
-    let lastTouchX = 0;
-    let lastTouchY = 0;
-
-    // 핀치
-    let isPinching = false;
-    let lastPinchDist = 0;
-    let lastPinchCenter = null;
-
-    // 렌더 스로틀
-    let rafPending = false;
-    let lastRenderTs = 0;
-
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d', { alpha: false });
-    const startBtn = document.getElementById('startBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const errorDiv = document.getElementById('error');
-    const warnDiv = document.getElementById('warn');
-    const locationInfo = document.getElementById('locationInfo');
-    const locationText = document.getElementById('locationText');
-    const togglePath = document.getElementById('togglePath');
-    const scaleIndicator = document.getElementById('scale-indicator');
-
-    // =========================
-    // 유틸
-    // =========================
-    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-    function toRad(d) { return d * Math.PI / 180; }
-    function toDeg(r) { return r * 180 / Math.PI; }
-
-    // Haversine 거리(미터)
-    function haversineMeters(lat1, lon1, lat2, lon2) {
-      const R = 6371e3;
-      const φ1 = toRad(lat1), φ2 = toRad(lat2);
-      const Δφ = toRad(lat2 - lat1);
-      const Δλ = toRad(lon2 - lon1);
-      const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
+    function getGMT3Now() {
+        const now = new Date();
+        return new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (3 * 3600000));
     }
 
-    // 로컬 평면 변환(equirectangular) : (lat,lon) -> meters (x,y) 기준점 (lat0, lon0)
-    function projectMeters(lat, lon, lat0, lon0) {
-      const R = 6371e3;
-      const φ = toRad(lat);
-      const φ0 = toRad(lat0);
-      const λ = toRad(lon);
-      const λ0 = toRad(lon0);
-      const x = (λ - λ0) * Math.cos((φ + φ0) / 2) * R;
-      const y = (φ - φ0) * R;
-      return { x, y };
-    }
+    function update() {
+        const now = getGMT3Now();
 
-    function unprojectMeters(x, y, lat0, lon0) {
-      const R = 6371e3;
-      const φ0 = toRad(lat0);
-      const λ0 = toRad(lon0);
-      const φ = y / R + φ0;
-      const λ = x / (R * Math.cos((φ + φ0) / 2)) + λ0;
-      return { lat: toDeg(φ), lon: toDeg(λ) };
-    }
+        // 1. 기본 날짜/시간
+        const dateOpt = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        document.getElementById('today-date').innerText = now.toLocaleDateString('ko-KR', dateOpt);
+        document.getElementById('current-time').innerText = 
+            now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " (GMT+3)";
 
-    function headingDeg(a, b, lat0, lon0) {
-      const A = projectMeters(a.lat, a.lon, lat0, lon0);
-      const B = projectMeters(b.lat, b.lon, lat0, lon0);
-      const dx = B.x - A.x;
-      const dy = B.y - A.y;
-      const ang = Math.atan2(dy, dx); // -pi..pi
-      let deg = (toDeg(ang) + 360) % 360;
-      return deg;
-    }
+        // 2. 전체 진행률 (소수점 8자리)
+        const totalMs = END_DATE - START_DATE;
+        const elapsedMs = now - START_DATE;
+        let progress = Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100));
+        document.getElementById('total-fill').style.width = progress + "%";
+        document.getElementById('total-percent').innerText = progress.toFixed(8) + "% 경과";
 
-    function angleDiffDeg(a, b) {
-      let d = Math.abs(a - b) % 360;
-      if (d > 180) d = 360 - d;
-      return d;
-    }
+        // 3. 변수 초기화
+        let remainDays = 0;
+        let totalWorkSec = 0;
+        let isWorkingNow = false;
+        let dailyRemainingSec = 0;
+        let dailyProgress = 0;
 
-    // =========================
-    // RDP(미터 기반) - 안정 구현(mask 방식)
-    // =========================
-    function rdpSimplifyMeters(pointsLL, toleranceM) {
-      if (!pointsLL || pointsLL.length <= 2) return pointsLL ? pointsLL.slice() : [];
-      const lat0 = pointsLL[0].lat;
-      const lon0 = pointsLL[0].lon;
+        let iter = new Date(now);
+        iter.setHours(0,0,0,0);
+        
+        let tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0,0,0,0);
 
-      const pts = pointsLL.map(p => {
-        const m = projectMeters(p.lat, p.lon, lat0, lon0);
-        return { ...p, _x: m.x, _y: m.y };
-      });
+        // 종료일까지 순회
+        let scan = new Date(iter);
+        while (scan <= END_DATE) {
+            const day = scan.getDay(); // 0:일, 4:목, 5:금, 6:토
+            const isLastDay = scan.toDateString() === END_DATE.toDateString();
+            const isShortDay = (day === 4 || isLastDay); // 목요일 또는 마지막 날(2/14)
 
-      const keep = new Array(pts.length).fill(false);
-      keep[0] = true;
-      keep[pts.length - 1] = true;
+            if (day !== 5) {
+                // [남은 근무일] 오늘 제외 내일부터
+                if (scan >= tomorrow) remainDays++;
 
-      function perpDist(i, a, b) {
-        const px = pts[i]._x, py = pts[i]._y;
-        const ax = pts[a]._x, ay = pts[a]._y;
-        const bx = pts[b]._x, by = pts[b]._y;
-        const dx = bx - ax, dy = by - ay;
-        const len2 = dx*dx + dy*dy;
-        if (len2 === 0) return Math.hypot(px - ax, py - ay);
-        const t = ((px - ax)*dx + (py - ay)*dy) / len2;
-        const cx = ax + t*dx;
-        const cy = ay + t*dy;
-        return Math.hypot(px - cx, py - cy);
-      }
+                // [업무 시간 계산]
+                const shifts = [
+                    { s: 6, e: 12 },
+                    { s: 13, e: isShortDay ? 15 : 17 }
+                ];
 
-      function simplifyRec(a, b) {
-        let maxD = 0;
-        let idx = -1;
-        for (let i = a + 1; i < b; i++) {
-          const d = perpDist(i, a, b);
-          if (d > maxD) { maxD = d; idx = i; }
-        }
-        if (idx !== -1 && maxD > toleranceM) {
-          keep[idx] = true;
-          simplifyRec(a, idx);
-          simplifyRec(idx, b);
-        }
-      }
+                const dayStart = new Date(scan).setHours(6, 0, 0, 0);
+                const dayEnd = new Date(scan).setHours(isShortDay ? 15 : 17, 0, 0, 0);
 
-      simplifyRec(0, pts.length - 1);
+                shifts.forEach(shift => {
+                    let sTime = new Date(scan).setHours(shift.s, 0, 0, 0);
+                    let eTime = new Date(scan).setHours(shift.e, 0, 0, 0);
+                    let effectiveStart = Math.max(sTime, now.getTime());
+                    if (effectiveStart < eTime) {
+                        totalWorkSec += (eTime - effectiveStart) / 1000;
+                    }
+                });
 
-      const out = [];
-      for (let i = 0; i < pts.length; i++) {
-        if (keep[i]) {
-          const { _x, _y, ...rest } = pts[i];
-          out.push(rest);
-        }
-      }
-      return out;
-    }
-
-    // =========================
-    // 코너 강조 + (가능하면) 직교 스냅
-    // - 지도 없이 교차로 "정답"은 불가하므로, 규칙 기반으로 형태만 정리
-    // =========================
-    function enhanceCornersAndSnap(pointsLL) {
-      if (!pointsLL || pointsLL.length <= 2) return pointsLL ? pointsLL.slice() : [];
-      const lat0 = pointsLL[0].lat;
-      const lon0 = pointsLL[0].lon;
-
-      // 1) 로컬 좌표로 변환
-      const ptsM = pointsLL.map(p => {
-        const m = projectMeters(p.lat, p.lon, lat0, lon0);
-        return { ...p, x: m.x, y: m.y };
-      });
-
-      // 2) 코너(방향 급변) 기준으로 포인트 유지(중간점 제거/강조)
-      const kept = [ptsM[0]];
-      for (let i = 1; i < ptsM.length - 1; i++) {
-        const a = ptsM[i-1], b = ptsM[i], c = ptsM[i+1];
-        const ang1 = Math.atan2(b.y - a.y, b.x - a.x);
-        const ang2 = Math.atan2(c.y - b.y, c.x - b.x);
-        const d = angleDiffDeg(toDeg(ang1), toDeg(ang2));
-        if (d >= CFG.cornerAngleDeg) kept.push(b);
-      }
-      kept.push(ptsM[ptsM.length - 1]);
-
-      // 3) 직교 스냅: 세그먼트 각도가 0/90/180/270 근처면 스냅
-      if (!CFG.enableOrthogonalSnap || kept.length <= 2) {
-        return kept.map(p => {
-          const ll = unprojectMeters(p.x, p.y, lat0, lon0);
-          return { ...p, lat: ll.lat, lon: ll.lon };
-        }).map(({ x, y, ...rest }) => rest);
-      }
-
-      // 누적 방식으로 선분들을 "가까운 직교 방향"으로 돌려서 포인트 재생성
-      const outM = [ { ...kept[0] } ];
-      for (let i = 1; i < kept.length; i++) {
-        const prev = outM[outM.length - 1];
-        const cur = kept[i];
-
-        const dx = cur.x - prev.x;
-        const dy = cur.y - prev.y;
-        const len = Math.hypot(dx, dy);
-        if (len < 0.5) continue;
-
-        const ang = (toDeg(Math.atan2(dy, dx)) + 360) % 360;
-        const candidates = [0, 90, 180, 270];
-        let best = ang, bestDiff = 1e9;
-        for (const c of candidates) {
-          const d = angleDiffDeg(ang, c);
-          if (d < bestDiff) { bestDiff = d; best = c; }
+                // [오늘의 근무진행률 로직]
+                if (scan.toDateString() === now.toDateString()) {
+                    if (now.getTime() >= dayStart && now.getTime() < dayEnd) {
+                        isWorkingNow = true;
+                        dailyProgress = ((now.getTime() - dayStart) / (dayEnd - dayStart)) * 100;
+                        dailyRemainingSec = Math.max(0, (dayEnd - now.getTime()) / 1000);
+                    }
+                }
+            }
+            scan.setDate(scan.getDate() + 1);
+            scan.setHours(0,0,0,0);
         }
 
-        if (bestDiff <= CFG.snapToOrthogonalDeg) {
-          // 직교 방향으로 투영
-          const rad = toRad(best);
-          const nx = Math.cos(rad);
-          const ny = Math.sin(rad);
-          const proj = dx * nx + dy * ny; // signed length along snapped direction
-          const snapped = {
-            ...cur,
-            x: prev.x + proj * nx,
-            y: prev.y + proj * ny
-          };
-          outM.push(snapped);
+        // UI 업데이트: 남은 근무 정보
+        document.getElementById('remain-days').innerText = remainDays + "일";
+        
+        const h = Math.floor(totalWorkSec / 3600);
+        const m = Math.floor((totalWorkSec % 3600) / 60);
+        const s = Math.floor(totalWorkSec % 60);
+        document.getElementById('remain-work-hours').innerText = `${h.toLocaleString()}시간 ${m}분 ${s}초`;
+
+        // UI 업데이트: 오늘의 업무 섹션
+        const dailySection = document.getElementById('daily-section');
+        if (isWorkingNow) {
+            dailySection.style.display = 'block';
+            document.getElementById('daily-fill').style.width = dailyProgress + "%";
+            
+            const dh = Math.floor(dailyRemainingSec / 3600);
+            const dm = Math.floor((dailyRemainingSec % 3600) / 60);
+            const ds = Math.floor(dailyRemainingSec % 60);
+            document.getElementById('daily-remain-text').innerText = 
+                `오늘 퇴근까지 남은 시간: ${String(dh).padStart(2, '0')}:${String(dm).padStart(2, '0')}:${String(ds).padStart(2, '0')}`;
         } else {
-          outM.push({ ...cur });
+            dailySection.style.display = 'none';
         }
-      }
-
-      // 4) 다시 위경도로
-      const outLL = outM.map(p => {
-        const ll = unprojectMeters(p.x, p.y, lat0, lon0);
-        const { x, y, ...rest } = p;
-        return { ...rest, lat: ll.lat, lon: ll.lon };
-      });
-
-      return outLL;
     }
 
-    // =========================
-    // 세그먼트 교차점(자체 교차) 탐지(표시용)
-    // =========================
-    function segmentIntersection(p1, p2, p3, p4) {
-      // (x,y) in meters. returns {x,y} or null
-      const x1=p1.x,y1=p1.y,x2=p2.x,y2=p2.y,x3=p3.x,y3=p3.y,x4=p4.x,y4=p4.y;
-      const den = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
-      if (Math.abs(den) < 1e-9) return null;
-      const px = ((x1*y2-y1*x2)*(x3-x4) - (x1-x2)*(x3*y4-y3*x4)) / den;
-      const py = ((x1*y2-y1*x2)*(y3-y4) - (y1-y2)*(x3*y4-y3*x4)) / den;
+    // 50ms 주기로 업데이트 (초당 20회)
+    setInterval(update, 50);
+    update();
+</script>
 
-      function within(a,b,c){ return c >= Math.min(a,b)-1e-6 && c <= Math.max(a,b)+1e-6; }
-      if (within(x1,x2,px) && within(y1,y2,py) && within(x3,x4,px) && within(y3,y4,py)) {
-        return { x: px, y: py };
-      }
-      return null;
-    }
-
-    function findIntersectionsLL(pointsLL) {
-      if (!CFG.enableIntersectionMarks || !pointsLL || pointsLL.length < 4) return [];
-      const lat0 = pointsLL[0].lat;
-      const lon0 = pointsLL[0].lon;
-      const pts = pointsLL.map(p => {
-        const m = projectMeters(p.lat, p.lon, lat0, lon0);
-        return { x: m.x, y: m.y };
-      });
-
-      const hits = [];
-      // 인접 세그먼트 제외(공유점 때문에)
-      for (let i = 0; i < pts.length - 1; i++) {
-        for (let j = i + 2; j < pts.length - 1; j++) {
-          if (j === i + 1) continue;
-          const inter = segmentIntersection(pts[i], pts[i+1], pts[j], pts[j+1]);
-          if (inter) hits.push(inter);
-        }
-      }
-
-      // 너무 가까운 교차점 병합
-      const merged = [];
-      const mergeDist = 3; // meters
-      for (const h of hits) {
-        let ok = true;
-        for (const m of merged) {
-          if (Math.hypot(h.x - m.x, h.y - m.y) < mergeDist) { ok = false; break; }
-        }
-        if (ok) merged.push(h);
-      }
-
-      return merged.map(m => unprojectMeters(m.x, m.y, lat0, lon0));
-    }
-
-    // =========================
-    // 캔버스/입력
-    // =========================
-    function resizeCanvas() {
-      const container = document.getElementById('canvas-container');
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-      requestDraw();
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    togglePath.addEventListener('click', () => {
-      showCorrectedPath = !showCorrectedPath;
-      togglePath.classList.toggle('active', showCorrectedPath);
-      togglePath.setAttribute('aria-checked', showCorrectedPath ? 'true' : 'false');
-      requestDraw();
-    });
-
-    function getTouchDistance(touches) {
-      const dx = touches[0].clientX - touches[1].clientX;
-      const dy = touches[0].clientY - touches[1].clientY;
-      return Math.sqrt(dx*dx + dy*dy);
-    }
-
-    function getTouchCenter(touches) {
-      return {
-        x: (touches[0].clientX + touches[1].clientX) / 2,
-        y: (touches[0].clientY + touches[1].clientY) / 2
-      };
-    }
-
-    function zoomAt(screenX, screenY, newScale) {
-      newScale = clamp(newScale, 0.5, 10);
-      const oldScale = scale;
-      if (newScale === oldScale) return;
-
-      // 화면 좌표 기준으로 확대 중심 고정:
-      // offset은 canvas 중심 기준 translate에 더해지는 값이므로,
-      // 확대 전/후에 해당 screen point의 "월드" 위치가 유지되도록 offset을 보정
-      const rect = canvas.getBoundingClientRect();
-      const cx = rect.left + canvas.width / 2;
-      const cy = rect.top + canvas.height / 2;
-
-      const dx = screenX - cx;
-      const dy = screenY - cy;
-
-      // 확대 전 중심 기준 상대좌표를 scale로 나누면 월드 단위
-      const worldX = (dx - offsetX) / oldScale;
-      const worldY = (dy - offsetY) / oldScale;
-
-      scale = newScale;
-
-      // 확대 후 다시 같은 월드가 같은 screen에 오도록 offset 재계산
-      offsetX = dx - worldX * scale;
-      offsetY = dy - worldY * scale;
-
-      requestDraw();
-    }
-
-    canvas.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      isDragging = true;
-      lastTouchX = e.clientX;
-      lastTouchY = e.clientY;
-    });
-
-    canvas.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      e.preventDefault();
-      const dx = e.clientX - lastTouchX;
-      const dy = e.clientY - lastTouchY;
-      offsetX += dx;
-      offsetY += dy;
-      lastTouchX = e.clientX;
-      lastTouchY = e.clientY;
-      requestDraw();
-    });
-
-    window.addEventListener('mouseup', () => { isDragging = false; });
-
-    canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (e.touches.length === 2) {
-        isPinching = true;
-        lastPinchDist = getTouchDistance(e.touches);
-        lastPinchCenter = getTouchCenter(e.touches);
-        isDragging = false;
-      } else if (e.touches.length === 1) {
-        isDragging = true;
-        isPinching = false;
-        lastTouchX = e.touches[0].clientX;
-        lastTouchY = e.touches[0].clientY;
-      }
-    }, { passive: false });
-
-    canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      if (isPinching && e.touches.length === 2) {
-        const dist = getTouchDistance(e.touches);
-        const center = getTouchCenter(e.touches);
-
-        const ratio = dist / (lastPinchDist || dist);
-        const newScale = scale * ratio;
-
-        // pinch 중심 기준 zoom
-        zoomAt(center.x, center.y, newScale);
-
-        lastPinchDist = dist;
-        lastPinchCenter = center;
-      } else if (isDragging && e.touches.length === 1) {
-        const dx = e.touches[0].clientX - lastTouchX;
-        const dy = e.touches[0].clientY - lastTouchY;
-        offsetX += dx;
-        offsetY += dy;
-        lastTouchX = e.touches[0].clientX;
-        lastTouchY = e.touches[0].clientY;
-        requestDraw();
-      }
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', () => {
-      isDragging = false;
-      isPinching = false;
-    });
-
-    canvas.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      zoomAt(e.clientX, e.clientY, scale * delta);
-    }, { passive: false });
-
-    // =========================
-    // 렌더 스로틀
-    // =========================
-    function requestDraw() {
-      if (rafPending) return;
-      rafPending = true;
-      requestAnimationFrame((ts) => {
-        rafPending = false;
-        const minFrame = 1000 / CFG.renderFps;
-        if (ts - lastRenderTs < minFrame) return;
-        lastRenderTs = ts;
-        drawPath();
-      });
-    }
-
-    // =========================
-    // 축척 계산(가로/세로 모두 고려)
-    // =========================
-    function updateScaleIndicatorFromBounds(minLat, maxLat, minLon, maxLon, drawWidthPx, drawHeightPx) {
-      if (!isFinite(minLat) || !isFinite(maxLat) || !isFinite(minLon) || !isFinite(maxLon)) {
-        scaleIndicator.textContent = '축척: -';
-        return;
-      }
-      const meanLat = (minLat + maxLat) / 2;
-      const latMeters = Math.max(0, haversineMeters(minLat, minLon, maxLat, minLon));
-      const lonMeters = Math.max(0, haversineMeters(meanLat, minLon, meanLat, maxLon));
-
-      const mPerPxY = drawHeightPx > 0 ? (latMeters / drawHeightPx) / scale : 0;
-      const mPerPxX = drawWidthPx > 0 ? (lonMeters / drawWidthPx) / scale : 0;
-
-      const mpp = (mPerPxX && mPerPxY) ? Math.min(mPerPxX, mPerPxY) : (mPerPxX || mPerPxY || 0);
-
-      if (!mpp) { scaleIndicator.textContent = '축척: -'; return; }
-
-      let value, unit;
-      if (mpp < 1) { value = (mpp * 100).toFixed(0); unit = 'cm/px'; }
-      else if (mpp < 1000) { value = mpp.toFixed(1); unit = 'm/px'; }
-      else { value = (mpp / 1000).toFixed(2); unit = 'km/px'; }
-
-      scaleIndicator.textContent = `축척: ${value}${unit}`;
-    }
-
-    // =========================
-    // 경로 그리기
-    // =========================
-    function drawPath() {
-      const width = canvas.width;
-      const height = canvas.height;
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = '#1a1a1a';
-      ctx.fillRect(0, 0, width, height);
-
-      if (points.length === 0) {
-        ctx.fillStyle = '#6b7280';
-        ctx.font = '16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('추적을 시작하세요', width / 2, height / 2);
-        scaleIndicator.textContent = '축척: -';
-        return;
-      }
-
-      // 표시 포인트 생성: raw -> (RDP) -> 코너/스냅
-      let displayPoints = points.slice();
-      let correctedPoints = null;
-
-      if (showCorrectedPath) {
-        const simplified = rdpSimplifyMeters(displayPoints, CFG.simplifyToleranceM);
-        const enhanced = enhanceCornersAndSnap(simplified);
-        correctedPoints = enhanced;
-        displayPoints = enhanced;
-      }
-
-      if (displayPoints.length === 1) {
-        ctx.save();
-        ctx.translate(offsetX, offsetY);
-        ctx.scale(scale, scale);
-        ctx.fillStyle = '#10b981';
-        ctx.beginPath();
-        ctx.arc(width / 2, height / 2, 10, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.restore();
-        scaleIndicator.textContent = '축척: -';
-        return;
-      }
-
-      // bounds
-      const lats = displayPoints.map(p => p.lat);
-      const lons = displayPoints.map(p => p.lon);
-      const minLat = Math.min(...lats);
-      const maxLat = Math.max(...lats);
-      const minLon = Math.min(...lons);
-      const maxLon = Math.max(...lons);
-
-      const latRange = (maxLat - minLat) || 0.0005;
-      const lonRange = (maxLon - minLon) || 0.0005;
-
-      const padding = 30;
-      const drawWidth = width - 2 * padding;
-      const drawHeight = height - 2 * padding;
-
-      function toCanvas(lat, lon) {
-        const x = padding + ((lon - minLon) / lonRange) * drawWidth;
-        const y = height - padding - ((lat - minLat) / latRange) * drawHeight;
-        return { x, y };
-      }
-
-      // world transform(팬/줌)
-      ctx.save();
-      ctx.translate(width / 2 + offsetX, height / 2 + offsetY);
-      ctx.scale(scale, scale);
-      ctx.translate(-width / 2, -height / 2);
-
-      // 원본 경로(보정 표시 중일 때 배경으로)
-      if (showCorrectedPath && points.length > 1) {
-        ctx.strokeStyle = 'rgba(100, 100, 100, 0.25)';
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.beginPath();
-        for (let i = 0; i < points.length; i++) {
-          const { x, y } = toCanvas(points[i].lat, points[i].lon);
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-      }
-
-      // 표시 경로
-      ctx.strokeStyle = showCorrectedPath ? '#10b981' : '#3b82f6';
-      ctx.lineWidth = showCorrectedPath ? 6 : 4;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = showCorrectedPath ? 'bevel' : 'miter';
-      ctx.miterLimit = 3;
-      ctx.beginPath();
-      for (let i = 0; i < displayPoints.length; i++) {
-        const { x, y } = toCanvas(displayPoints[i].lat, displayPoints[i].lon);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      // 교차점 표시(보정 경로 기준)
-      if (showCorrectedPath && correctedPoints && correctedPoints.length >= 4 && CFG.enableIntersectionMarks) {
-        const hits = findIntersectionsLL(correctedPoints);
-        if (hits.length) {
-          ctx.fillStyle = 'rgba(245, 158, 11, 0.95)'; // amber
-          ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-          ctx.lineWidth = 1.5;
-          for (const h of hits) {
-            const { x, y } = toCanvas(h.lat, h.lon);
-            ctx.beginPath();
-            ctx.arc(x, y, 6, 0, 2*Math.PI);
-            ctx.fill();
-            ctx.stroke();
-          }
-        }
-      }
-
-      // 시작점
-      const start = toCanvas(displayPoints[0].lat, displayPoints[0].lon);
-      ctx.fillStyle = '#10b981';
-      ctx.beginPath();
-      ctx.arc(start.x, start.y, 10, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // 현재 위치
-      const end = toCanvas(displayPoints[displayPoints.length - 1].lat, displayPoints[displayPoints.length - 1].lon);
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.arc(end.x, end.y, 12, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      ctx.restore();
-
-      updateScaleIndicatorFromBounds(minLat, maxLat, minLon, maxLon, drawWidth, drawHeight);
-    }
-
-    // =========================
-    // 통계
-    // =========================
-    function updateStats() {
-      document.getElementById('pointCount').textContent = points.length;
-      document.getElementById('distance').textContent = (totalDistance / 1000).toFixed(2) + 'km';
-
-      if (startTime) {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const h = Math.floor(elapsed / 3600);
-        const m = Math.floor((elapsed % 3600) / 60);
-        const s = elapsed % 60;
-        document.getElementById('time').textContent = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-      } else {
-        document.getElementById('time').textContent = '0:00:00';
-      }
-
-      resetBtn.disabled = (points.length === 0) && !isTracking;
-      downloadBtn.disabled = points.length === 0;
-    }
-
-    // =========================
-    // 에러/경고
-    // =========================
-    function showError(message) {
-      errorDiv.textContent = message;
-      errorDiv.classList.remove('hidden');
-    }
-    function hideError() { errorDiv.classList.add('hidden'); }
-
-    function showWarn(message) {
-      warnDiv.textContent = message;
-      warnDiv.classList.remove('hidden');
-    }
-    function hideWarn() { warnDiv.classList.add('hidden'); }
-
-    // =========================
-    // 추적 시작/중지
-    // =========================
-    startBtn.addEventListener('click', () => {
-      if (isTracking) {
-        if (confirm('추적을 중지하시겠습니까?\n기록된 데이터는 유지됩니다.')) stopTracking();
-      } else {
-        startTracking();
-      }
-    });
-
-    function startTracking() {
-      if (!navigator.geolocation) {
-        showError('이 기기는 GPS를 지원하지 않습니다.');
-        return;
-      }
-
-      hideError();
-      hideWarn();
-
-      isTracking = true;
-
-      // startTime은 "처음 시작"만 잡고, 중지 후 재시작 시 새로 시작하도록 유지(원하면 누적 방식으로 바꿔도 됨)
-      startTime = Date.now();
-
-      startBtn.textContent = '⏸ 중지';
-      startBtn.classList.add('tracking');
-      resetBtn.disabled = true;
-
-      timerInterval = setInterval(updateStats, 1000);
-
-      watchId = navigator.geolocation.watchPosition(
-        onPosition,
-        onGeoError,
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-      );
-    }
-
-    function stopTracking() {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
-      }
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-      }
-      isTracking = false;
-      startBtn.textContent = '▶ 시작';
-      startBtn.classList.remove('tracking');
-      resetBtn.disabled = (points.length === 0);
-      updateStats();
-    }
-
-    function onGeoError(error) {
-      console.error('GPS 에러:', error);
-
-      // TIMEOUT은 일시적일 수 있으니 추적 유지 + 경고만
-      if (error && error.code === 3) {
-        showWarn(`GPS 지연: ${error.message} (계속 시도 중)`);
-        return;
-      }
-
-      showError(`GPS 오류: ${error.message} (코드: ${error.code})`);
-      stopTracking();
-    }
-
-    function isValidFix(p) {
-      if (!p || !isFinite(p.lat) || !isFinite(p.lon)) return false;
-      if (!isFinite(p.accuracy)) return false;
-      if (p.accuracy > CFG.maxAccuracyM) return false;
-      return true;
-    }
-
-    function passesJumpFilter(prev, cur) {
-      if (!prev) return true;
-      const dt = (cur.timestamp - prev.timestamp) / 1000;
-      if (!isFinite(dt) || dt <= 0) return true;
-
-      // 너무 짧은 간격은 speed 판단이 불안정할 수 있음
-      if (dt < CFG.minDtForSpeedCheckS) return true;
-
-      const d = haversineMeters(prev.lat, prev.lon, cur.lat, cur.lon);
-      const speed = d / dt;
-
-      // 브라우저가 speed 제공하면 참고(하지만 신뢰도 들쭉날쭉)
-      const sp = (isFinite(cur.speed) && cur.speed >= 0) ? cur.speed : null;
-      const effectiveSpeed = sp !== null ? Math.max(speed, sp) : speed;
-
-      return effectiveSpeed <= CFG.maxJumpSpeedMps;
-    }
-
-    function onPosition(position) {
-      const cur = {
-        lat: position.coords.latitude,
-        lon: position.coords.longitude,
-        timestamp: position.timestamp,
-        accuracy: position.coords.accuracy,
-        speed: position.coords.speed
-      };
-
-      locationInfo.classList.remove('hidden');
-      locationText.innerHTML = `
-        위도: ${cur.lat.toFixed(6)}°<br>
-        경도: ${cur.lon.toFixed(6)}°<br>
-        정확도: ±${cur.accuracy.toFixed(0)}m
-      `;
-
-      // 정확도/점프 필터
-      if (!isValidFix(cur)) {
-        showWarn(`GPS 정확도 낮음(±${cur.accuracy.toFixed(0)}m) - 일시 제외`);
-        return;
-      }
-      if (!passesJumpFilter(lastAccumPoint, cur)) {
-        showWarn('비정상 위치 점프 감지 - 일시 제외');
-        return;
-      }
-      hideWarn();
-
-      // 누적 거리: "유효한 fix"는 기록 여부와 무관하게 누적
-      if (lastAccumPoint) {
-        const d = haversineMeters(lastAccumPoint.lat, lastAccumPoint.lon, cur.lat, cur.lon);
-        // 너무 작은 노이즈는 누적 제외(미세 흔들림)
-        if (d >= 0.5) totalDistance += d;
-      }
-      lastAccumPoint = cur;
-
-      // 기록(샘플링): 표시/저장용 points는 조건 만족 시에만 push
-      let shouldRecord = false;
-      if (!lastRecordedPoint) {
-        shouldRecord = true;
-      } else {
-        const dRec = haversineMeters(lastRecordedPoint.lat, lastRecordedPoint.lon, cur.lat, cur.lon);
-        const minMove = (cur.accuracy < CFG.goodAccuracyM) ? CFG.recordMinMoveAccGoodM : CFG.recordMinMoveM;
-        if (dRec >= minMove) shouldRecord = true;
-      }
-
-      if (shouldRecord) {
-        points.push(cur);
-        lastRecordedPoint = cur;
-
-        downloadBtn.disabled = false;
-        resetBtn.disabled = true;
-
-        requestDraw();
-        updateStats();
-        console.log('GPS 기록:', cur, 'points:', points.length);
-      } else {
-        // 기록은 안해도 거리/시간은 갱신되므로 최소한 stats는 갱신
-        updateStats();
-      }
-    }
-
-    // =========================
-    // 리셋
-    // =========================
-    resetBtn.addEventListener('click', () => {
-      if (confirm('모든 데이터를 삭제하시겠습니까?')) {
-        stopTracking();
-        points = [];
-        totalDistance = 0;
-        startTime = null;
-
-        lastAccumPoint = null;
-        lastRecordedPoint = null;
-
-        scale = 1;
-        offsetX = 0;
-        offsetY = 0;
-
-        locationInfo.classList.add('hidden');
-        downloadBtn.disabled = true;
-        resetBtn.disabled = true;
-
-        hideError();
-        hideWarn();
-
-        requestDraw();
-        updateStats();
-      }
-    });
-
-    // =========================
-    // 다운로드(iOS/Safari 안정성 개선)
-    // =========================
-    downloadBtn.addEventListener('click', () => {
-      if (points.length === 0) return;
-
-      const corrected = (() => {
-        const simplified = rdpSimplifyMeters(points, CFG.simplifyToleranceM);
-        return enhanceCornersAndSnap(simplified);
-      })();
-
-      const intersections = CFG.enableIntersectionMarks ? findIntersectionsLL(corrected) : [];
-
-      const data = {
-        rawPoints: points,
-        correctedPoints: corrected,
-        intersections: intersections,
-        params: {
-          maxAccuracyM: CFG.maxAccuracyM,
-          maxJumpSpeedMps: CFG.maxJumpSpeedMps,
-          recordMinMoveM: CFG.recordMinMoveM,
-          recordMinMoveAccGoodM: CFG.recordMinMoveAccGoodM,
-          simplifyToleranceM: CFG.simplifyToleranceM,
-          cornerAngleDeg: CFG.cornerAngleDeg,
-          snapToOrthogonalDeg: CFG.snapToOrthogonalDeg,
-          enableOrthogonalSnap: CFG.enableOrthogonalSnap,
-          enableIntersectionMarks: CFG.enableIntersectionMarks
-        },
-        stats: {
-          distanceM: totalDistance,
-          pointCount: points.length,
-          durationS: startTime ? Math.floor((Date.now() - startTime) / 1000) : 0
-        },
-        exportTime: new Date().toISOString()
-      };
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `gps-track-${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      // revoke를 너무 빨리 하면 일부 브라우저에서 다운로드 실패 가능
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    });
-
-    // =========================
-    // 페이지 이탈 경고
-    // =========================
-    window.addEventListener('beforeunload', (e) => {
-      if (isTracking || points.length > 0) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    });
-
-    // =========================
-    // 초기 상태
-    // =========================
-    requestDraw();
-    updateStats();
-
-    console.log('GPS 추적기 준비 완료');
-    console.log('Geolocation 지원:', !!navigator.geolocation);
-  </script>
 </body>
 </html>
