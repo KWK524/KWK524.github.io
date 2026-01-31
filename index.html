@@ -36,7 +36,6 @@
 
         .card { background: var(--card-bg); padding: 2rem; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
         
-        /* 테마 버튼 스타일 수정 (색상 빠짐 해결) */
         .theme-selector { display: flex; justify-content: center; gap: 12px; margin-bottom: 1.5rem; }
         .theme-btn { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); transition: transform 0.2s; }
         .theme-btn:hover { transform: scale(1.2); }
@@ -52,7 +51,6 @@
         .gauge-container { background: var(--gauge-bg); border-radius: 50px; height: 16px; overflow: hidden; margin-bottom: 0.5rem; }
         .gauge-fill { height: 100%; background: var(--accent-color); transition: width 0.05s linear; }
         
-        /* 폰트 수정: Pretendard 기반 고정폭 숫자 (예쁨+안흔들림) */
         .percent-text { 
             font-size: 1.1rem; 
             font-weight: 800; 
@@ -66,11 +64,16 @@
         #daily-section { display: none; margin: 1.2rem 0; padding: 1rem; border-radius: 16px; background: rgba(0,0,0,0.03); border: 1px dashed var(--accent-color); }
         .daily-text { color: var(--work-green); font-size: 0.85rem; font-weight: bold; margin-top: 6px; font-variant-numeric: tabular-nums; }
 
+        /* 식단 섹션 스타일 업데이트 */
         .meal-section { margin-top: 1.2rem; padding: 1rem; border-radius: 16px; background: rgba(253, 126, 20, 0.08); border: 1px solid rgba(253, 126, 20, 0.2); text-align: left; }
-        .meal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
-        .meal-title { font-weight: 800; color: var(--meal-orange); font-size: 0.9rem; }
+        .meal-row { margin-bottom: 0.8rem; }
+        .meal-row:last-child { margin-bottom: 0; }
+        .meal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+        .meal-title { font-weight: 800; color: var(--meal-orange); font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
         .meal-type { font-size: 0.7rem; background: var(--meal-orange); color: white; padding: 2px 6px; border-radius: 4px; }
-        .meal-content { font-size: 0.9rem; line-height: 1.5; font-weight: 500; word-break: keep-all; }
+        .meal-type.sub { background: var(--text-sub); opacity: 0.7; }
+        .meal-content { font-size: 0.9rem; line-height: 1.4; font-weight: 500; word-break: keep-all; color: var(--text-main); }
+        .meal-divider { border-top: 1px dashed rgba(253, 126, 20, 0.3); margin: 0.8rem 0; }
 
         .comment-card { text-align: left; }
         .comment-input-wrapper { background: rgba(0,0,0,0.03); border-radius: 12px; padding: 10px; margin-bottom: 1rem; }
@@ -108,11 +111,23 @@
         </div>
 
         <div class="meal-section">
-            <div class="meal-header">
-                <span class="meal-title">🍴 다음 식사 메뉴</span>
-                <span id="next-meal-type" class="meal-type">조식</span>
+            <div class="meal-row">
+                <div class="meal-header">
+                    <span class="meal-title">🍴 곧 다가오는 식사</span>
+                    <span id="meal-1-type" class="meal-type">조식</span>
+                </div>
+                <div id="meal-1-content" class="meal-content">로딩 중...</div>
             </div>
-            <div id="next-meal-content" class="meal-content">메뉴를 불러오는 중...</div>
+
+            <div class="meal-divider"></div>
+
+            <div class="meal-row">
+                <div class="meal-header">
+                    <span class="meal-title" style="font-size: 0.85rem; opacity: 0.8;">🔜 그 다음 식사</span>
+                    <span id="meal-2-type" class="meal-type sub">중식</span>
+                </div>
+                <div id="meal-2-content" class="meal-content" style="opacity: 0.8;">로딩 중...</div>
+            </div>
         </div>
 
         <div class="stats-grid" style="display:grid; gap:0.8rem; margin-top:1rem; padding-top:1rem; border-top:1px solid var(--gauge-bg);">
@@ -138,48 +153,48 @@
 </div>
 
 <script>
-    // ⚠️ [중요] 2단계에서 업데이트한 구글 스크립트 URL을 여기에 다시 넣어주세요!
+    // ⚠️ 구글 스크립트 URL은 기존에 사용하시던 것을 그대로 유지해주세요.
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyz3MZfyooZOZKNvbgRo81jRkGGLyxoHhkVPVvwREt9nlTmHLaH7M0pwfXkSLHZ2zup9A/exec"; 
     
     const START_DATE = new Date('2025-08-31T00:00:00+03:00');
     const END_DATE = new Date('2026-02-14T15:00:00+03:00');
 
-    // 식단 데이터 (1/24 ~ 1/30)
+    // 식단 데이터 업데이트 (1/31 ~ 2/6)
     const MEAL_DATA = {
-        "2026-01-24": { 
-            "B": "치즈에그샌드위치, 누룽지, 콩나물국, 베이컨김밥, 스크램블, 삶은계란/샐러드", 
-            "L": "갈치조림, 갈비찜, 된장찌개, 계란말이, 감자샐러드, 무생채", 
-            "D": "짬뽕, 후라이치킨, 떡갈비, 찐만두, 어묵전, 단무지" 
+        "2026-01-31": { 
+            "B": "으깬감자샌드위치, 감자된장찌개, 누룽지, 불고기김밥, 계란 후라이, 삶은 계란/샐러드", 
+            "L": "떡갈비, 어탕수, 계란찜, 두부간장, 미역 무침, 콘샐러드", 
+            "D": "닭칼국수, 소고기야채볶음, 새우튀김, 감자볶음, 오징어채, 단무지무침" 
         },
-        "2026-01-25": { 
-            "B": "BLT샌드위치, 햄전, 불고기, 양배추무침, 계란후라이, 삶은계란/샐러드", 
-            "L": "닭볶음, 오징어튀김, 소고기미역국, 두부조림, 미역줄기, 배추겉절이", 
-            "D": "불고기(테이블), 치킨카츠, 북어볶음, 김치전, 생선전, 감자조림" 
+        "2026-02-01": { 
+            "B": "치즈에그샌드위치, 김치국, 닭강정볶음, 생선전, 스크램블에그, 삶은 계란/샐러드", 
+            "L": "김치볶음밥, 치킨윙, 떡볶이, 찐만두, 미소국, 머스타드 샐러드", 
+            "D": "오리주물럭(테이블), 오징어튀김, 잡채, 두부구이, 파절이, 상추쌈" 
         },
-        "2026-01-26": { 
-            "B": "컵라면, 참치샌드위치, 누룽지, 소고기김밥, 계란후라이, 삶은계란/샐러드", 
-            "L": "양념치킨, 생선전, 어묵국, 잡채, 도라지나물, 고구마샐러드", 
-            "D": "설렁탕, 육전, 새우튀김, 김치볶음, 양념간장, 오이무침" 
+        "2026-02-02": { 
+            "B": "컵라면, BLT샌드위치, 누룽지, 치즈김밥, 계란 후라이, 삶은 계란/샐러드", 
+            "L": "육개장, 양념치킨, 갈치구이, 쏘시지볶음, 무생채, 토마토 샐러드", 
+            "D": "우동, 찹스테이크, 팔보채, 계란국, 야채튀김, 연어샐러드" 
         },
-        "2026-01-27": { 
-            "B": "김치샌드위치, 어묵국, 호박볶음, 장조림, 계란말이, 삶은계란/샐러드", 
-            "L": "오징어볶음, 너비아니, 닭곰탕, 두부구이, 멸치볶음, 도라지무침", 
-            "D": "물냉면, 후라이치킨, 소꼬리곰탕, 해물파전, 연어샐러드, 감자채볶음" 
+        "2026-02-03": { 
+            "B": "햄버거, 김치베이컨 볶음, 누룽지, 도시락김, 계란찜, 삶은 계란/샐러드", 
+            "L": "배추국, 불고기, 고등어구이, 두부찜, 호박전, 시금치 나물", 
+            "D": "부대찌개(테이블), BBQ 치킨, 크림새우, 계란말이, 감자튀김, 게살샐러드" 
         },
-        "2026-01-28": { 
-            "B": "햄버거, 누룽지, 새우시금치국, 치즈김밥, 계란후라이, 삶은계란/샐러드", 
-            "L": "비빔메밀국수, 닭갈비, 칠리새우, 김치찌개, 계란조림, 감자조림", 
-            "D": "소고기(테이블), 생선튀김, 부추전, 감자찌개, 멸치볶음, 파저리" 
+        "2026-02-04": { 
+            "B": "콩나물국, 양배추 샐러드, 누룽지, 베이컨김밥, 계란 후라이, 삶은 계란/샐러드", 
+            "L": "오징어 볶음, 미역국, 맛살전, 김치 볶음, 콩나물 무침, 골뱅이무침", 
+            "D": "갈비탕, 간장치킨, 해물파전, 어묵볶음, 버섯조림, 무샐러드" 
         },
-        "2026-01-29": { 
-            "B": "햄버거, 새우볶음, 오징어무국, 도시락김, 계란찜, 삶은계란/샐러드", 
-            "L": "불고기, 고등어구이, 해물탕, 마파두부, 감자채볶음, 진미채", 
-            "D": "회덮밥, 미소국, 치킨카츠, 새우완자전, 어묵볶음, 호박볶음" 
+        "2026-02-05": { 
+            "B": "장조림, 참치샌드위치, 누룽지, 도시락김, 계란 후라이, 삶은 계란/샐러드", 
+            "L": "해장국, 닭볶음, 새우튀김, 두부구이, 어묵볶음, 오이무침", 
+            "D": "소고기구이, 부추전, 스파게티, 후렌치프라이, 과일샐러드" 
         },
-        "2026-01-30": { 
-            "B": "두부조림, 누룽지, 시금치무침, 구이김, 계란말이, 삶은계란/샐러드", 
-            "L": "신라면, 김밥, 햄버거, 후라이윙치킨, 감자구이, 단무지", 
-            "D": "치킨카츠, 배추국, 오징어부추전, 양배추볶음, 김치" 
+        "2026-02-06": { 
+            "B": "미역국, 양배추샌드위치, 계란말이, 소시지양파구이, 계란 후라이, 삶은 계란/샐러드", 
+            "L": "신라면, 김밥, 햄버거, 후라이치킨, 고구마구이, 계란후라이", 
+            "D": "치킨 너겟, 콩나물국, 생선 튀김, 고등어 조림, 버섯 볶음, 오이샐러드" 
         }
     };
 
@@ -187,6 +202,19 @@
     if(localStorage.getItem('theme')) setTheme(localStorage.getItem('theme'));
 
     function getGMT3Now() { const n = new Date(); return new Date(n.getTime() + (n.getTimezoneOffset() * 60000) + (3 * 3600000)); }
+
+    function getMealInfo(dateStr, type) {
+        const meal = MEAL_DATA[dateStr];
+        let menu = "정보 없음";
+        if (meal && meal[type]) menu = meal[type];
+        
+        let label = "";
+        if (type === 'B') label = "조식";
+        else if (type === 'L') label = "중식";
+        else label = "석식";
+        
+        return { label: label, menu: menu };
+    }
 
     function update() {
         const now = getGMT3Now();
@@ -242,23 +270,47 @@
                 `오늘 퇴근까지 ${String(Math.floor(dailyRem/3600)).padStart(2,'0')}:${String(Math.floor((dailyRem%3600)/60)).padStart(2,'0')}:${String(Math.floor(dailyRem%60)).padStart(2,'0')} 남음`;
         } else { dSec.style.display = 'none'; }
 
-        // 식단
+        // --- 식단 로직 업데이트 (다음 2개 식사 보여주기) ---
         const h = now.getHours();
-        const dateStr = now.toISOString().split('T')[0];
-        let targetDate = dateStr, mealType = "B", typeText = "조식 (05:00)";
+        const ymd = now.toISOString().split('T')[0];
         
-        if (h < 6) { mealType = "B"; typeText = "오늘 조식"; }
-        else if (h < 13) { mealType = "L"; typeText = "오늘 중식"; }
-        else if (h < 20) { mealType = "D"; typeText = "오늘 석식"; }
+        let m1Date = ymd, m1Type = 'B';
+        
+        // 현재 시간 기준 첫 번째 식사 결정
+        if (h < 6) { m1Type = 'B'; }
+        else if (h < 13) { m1Type = 'L'; }
+        else if (h < 20) { m1Type = 'D'; }
         else { 
-            const tmr = new Date(now); tmr.setDate(tmr.getDate() + 1); 
-            targetDate = tmr.toISOString().split('T')[0]; 
-            mealType = "B"; typeText = "내일 조식"; 
+            // 오늘 저녁 지났으면 내일 조식
+            let t = new Date(now); t.setDate(t.getDate() + 1);
+            m1Date = t.toISOString().split('T')[0];
+            m1Type = 'B';
         }
 
-        const meal = MEAL_DATA[targetDate];
-        document.getElementById('next-meal-type').innerText = typeText;
-        document.getElementById('next-meal-content').innerText = meal ? meal[mealType] : "식단 정보가 없습니다.";
+        // 두 번째 식사 결정 (m1 다음)
+        let m2Date = m1Date, m2Type = 'B';
+        if (m1Type === 'B') { m2Type = 'L'; }
+        else if (m1Type === 'L') { m2Type = 'D'; }
+        else { 
+            // m1이 저녁이면 m2는 내일 조식
+            let t = new Date(m1Date); t.setDate(t.getDate() + 1);
+            m2Date = t.toISOString().split('T')[0];
+            m2Type = 'B';
+        }
+
+        const info1 = getMealInfo(m1Date, m1Type);
+        const info2 = getMealInfo(m2Date, m2Type);
+
+        // UI 적용
+        let dayStr1 = (m1Date === ymd) ? "오늘" : "내일";
+        let dayStr2 = (m2Date === ymd) ? "오늘" : "내일";
+        if (m1Date !== ymd && m2Date !== m1Date) dayStr2 = "모레"; // 혹시 모를 경우 대비
+
+        document.getElementById('meal-1-type').innerText = `${dayStr1} ${info1.label}`;
+        document.getElementById('meal-1-content').innerText = info1.menu;
+
+        document.getElementById('meal-2-type').innerText = `${dayStr2} ${info2.label}`;
+        document.getElementById('meal-2-content').innerText = info2.menu;
     }
 
     async function loadMemos() {
