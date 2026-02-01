@@ -38,7 +38,7 @@
             transition: all 0.3s ease; 
         }
         
-        @media (min-width: 1000px) {
+        @media (min-width: 1100px) {
             .dashboard-wrapper { 
                 grid-template-columns: 1.2fr 1fr 1fr; /* 메인카드를 조금 더 넓게 */
                 max-width: 1400px; 
@@ -68,11 +68,12 @@
         #daily-section { display: none; margin: 1.2rem 0; padding: 1rem; border-radius: 16px; background: rgba(0,0,0,0.03); border: 1px dashed var(--accent-color); }
         .daily-text { color: var(--work-green); font-size: 0.85rem; font-weight: bold; margin-top: 6px; font-variant-numeric: tabular-nums; }
 
-        /* 식단 스타일 */
+        /* 식단 섹션 (기존 스타일 복구) */
         .meal-section { margin-top: 1.2rem; padding: 1rem; border-radius: 16px; background: rgba(253, 126, 20, 0.08); border: 1px solid rgba(253, 126, 20, 0.2); text-align: left; }
         .meal-row { margin-bottom: 0.8rem; }
+        .meal-row:last-child { margin-bottom: 0; }
         .meal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
-        .meal-title { font-weight: 800; color: var(--meal-orange); font-size: 0.9rem; }
+        .meal-title { font-weight: 800; color: var(--meal-orange); font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
         .meal-type { font-size: 0.7rem; background: var(--meal-orange); color: white; padding: 2px 6px; border-radius: 4px; }
         .meal-type.sub { background: var(--text-sub); opacity: 0.7; }
         .meal-content { font-size: 0.9rem; line-height: 1.4; font-weight: 500; word-break: keep-all; color: var(--text-main); }
@@ -87,7 +88,7 @@
         .action-btn { background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; float: right; margin-top: 5px; }
         .game-btn { background: var(--game-purple); }
 
-        .scroll-list { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; flex-grow: 1; }
+        .scroll-list { list-style: none; padding: 0; margin: 0; max-height: 500px; overflow-y: auto; flex-grow: 1; }
         .list-item { padding: 12px 0; border-bottom: 1px solid var(--gauge-bg); position: relative; }
         .date-label { font-size: 0.75rem; color: var(--text-sub); margin-top: 5px; }
 
@@ -105,8 +106,9 @@
         }
         .last-word-highlight { color: var(--highlight); font-weight: 900; text-decoration: underline; margin-right: 4px;}
         
-        .like-container { position: absolute; right: 0; bottom: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
-        .like-container:hover { color: var(--highlight); }
+        .like-container { position: absolute; right: 0; bottom: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; transition: 0.2s; padding: 4px 8px; border-radius: 12px; border: 1px solid transparent; }
+        .like-container:hover { background: rgba(217, 83, 79, 0.1); border-color: var(--highlight); color: var(--highlight); }
+        .like-count { font-size: 0.85rem; font-weight: bold; }
     </style>
 </head>
 <body data-theme="skyblue">
@@ -134,17 +136,25 @@
 
         <div class="meal-section">
             <div class="meal-row">
-                <div class="meal-header"><span class="meal-title">🍴 곧 다가오는 식사</span><span id="meal-1-type" class="meal-type">조식</span></div>
+                <div class="meal-header">
+                    <span class="meal-title">🍴 곧 다가오는 식사</span>
+                    <span id="meal-1-type" class="meal-type">조식</span>
+                </div>
                 <div id="meal-1-content" class="meal-content">로딩 중...</div>
             </div>
+
             <div class="meal-divider"></div>
+
             <div class="meal-row">
-                <div class="meal-header"><span class="meal-title" style="opacity:0.8;">🔜 그 다음 식사</span><span id="meal-2-type" class="meal-type sub">중식</span></div>
-                <div id="meal-2-content" class="meal-content" style="opacity:0.8;">로딩 중...</div>
+                <div class="meal-header">
+                    <span class="meal-title" style="font-size: 0.85rem; opacity: 0.8;">🔜 그 다음 식사</span>
+                    <span id="meal-2-type" class="meal-type sub">중식</span>
+                </div>
+                <div id="meal-2-content" class="meal-content" style="opacity: 0.8;">로딩 중...</div>
             </div>
         </div>
 
-  <div class="stats-grid" style="display:grid; gap:0.8rem; margin-top:1rem; padding-top:1rem; border-top:1px solid var(--gauge-bg);">
+        <div class="stats-grid" style="display:grid; gap:0.8rem; margin-top:1rem; padding-top:1rem; border-top:1px solid var(--gauge-bg);">
             <div style="text-align:left; padding:0.8rem; background:rgba(0,0,0,0.02); border-radius:12px;">
                 <span style="font-size:0.8rem; color:var(--text-sub);">📅 남은 근무일 (오늘 제외)</span>
                 <span id="remain-days" style="font-size:1rem; font-weight:700;">0일</span>
@@ -155,7 +165,6 @@
             </div>
         </div>
     </div>
-
 
     <div class="card comment-card">
         <div style="font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem;">💬 실시간 공유 게시판</div>
@@ -185,24 +194,52 @@
 </div>
 
 <script>
-    // ⚠️ 1단계에서 새로 배포한 구글 스크립트 URL을 여기에 넣어주세요!
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwFgK6HfYnFMT7E0IhxBD4QxrsMGDtFEF8lDp_fiIzJvPBw8AJo3C8LdI2xjv-5vQZaDg/exec"; 
+    // ⚠️ 1단계 구글 스크립트 URL 유지
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyz3MZfyooZOZKNvbgRo81jRkGGLyxoHhkVPVvwREt9nlTmHLaH7M0pwfXkSLHZ2zup9A/exec"; 
     
     const START_DATE = new Date('2025-08-31T00:00:00+03:00');
     const END_DATE = new Date('2026-02-14T15:00:00+03:00');
 
-    // 식단 데이터 (1/31 ~ 2/6)
+    // 식단 데이터 (완전 복구)
     const MEAL_DATA = {
-        "2026-01-31": { "B": "으깬감자샌드위치, 감자된장찌개, 누룽지", "L": "떡갈비, 어탕수, 계란찜", "D": "닭칼국수, 소고기야채볶음, 새우튀김" },
-        "2026-02-01": { "B": "치즈에그샌드위치, 김치국", "L": "김치볶음밥, 치킨윙, 떡볶이", "D": "오리주물럭, 오징어튀김" },
-        "2026-02-02": { "B": "컵라면, BLT샌드위치", "L": "육개장, 양념치킨", "D": "우동, 찹스테이크" },
-        "2026-02-03": { "B": "햄버거, 김치베이컨 볶음", "L": "배추국, 불고기, 고등어구이", "D": "부대찌개, BBQ 치킨" },
-        "2026-02-04": { "B": "콩나물국, 양배추 샐러드", "L": "오징어 볶음, 미역국", "D": "갈비탕, 간장치킨" },
-        "2026-02-05": { "B": "장조림, 참치샌드위치", "L": "해장국, 닭볶음", "D": "소고기구이, 스파게티" },
-        "2026-02-06": { "B": "미역국, 양배추샌드위치", "L": "신라면, 김밥, 햄버거", "D": "치킨 너겟, 콩나물국" }
+        "2026-01-31": { 
+            "B": "으깬감자샌드위치, 감자된장찌개, 누룽지, 불고기김밥, 계란 후라이, 삶은 계란/샐러드", 
+            "L": "떡갈비, 어탕수, 계란찜, 두부간장, 미역 무침, 콘샐러드", 
+            "D": "닭칼국수, 소고기야채볶음, 새우튀김, 감자볶음, 오징어채, 단무지무침" 
+        },
+        "2026-02-01": { 
+            "B": "치즈에그샌드위치, 김치국, 닭강정볶음, 생선전, 스크램블에그, 삶은 계란/샐러드", 
+            "L": "김치볶음밥, 치킨윙, 떡볶이, 찐만두, 미소국, 머스타드 샐러드", 
+            "D": "오리주물럭(테이블), 오징어튀김, 잡채, 두부구이, 파절이, 상추쌈" 
+        },
+        "2026-02-02": { 
+            "B": "컵라면, BLT샌드위치, 누룽지, 치즈김밥, 계란 후라이, 삶은 계란/샐러드", 
+            "L": "육개장, 양념치킨, 갈치구이, 쏘시지볶음, 무생채, 토마토 샐러드", 
+            "D": "우동, 찹스테이크, 팔보채, 계란국, 야채튀김, 연어샐러드" 
+        },
+        "2026-02-03": { 
+            "B": "햄버거, 김치베이컨 볶음, 누룽지, 도시락김, 계란찜, 삶은 계란/샐러드", 
+            "L": "배추국, 불고기, 고등어구이, 두부찜, 호박전, 시금치 나물", 
+            "D": "부대찌개(테이블), BBQ 치킨, 크림새우, 계란말이, 감자튀김, 게살샐러드" 
+        },
+        "2026-02-04": { 
+            "B": "콩나물국, 양배추 샐러드, 누룽지, 베이컨김밥, 계란 후라이, 삶은 계란/샐러드", 
+            "L": "오징어 볶음, 미역국, 맛살전, 김치 볶음, 콩나물 무침, 골뱅이무침", 
+            "D": "갈비탕, 간장치킨, 해물파전, 어묵볶음, 버섯조림, 무샐러드" 
+        },
+        "2026-02-05": { 
+            "B": "장조림, 참치샌드위치, 누룽지, 도시락김, 계란 후라이, 삶은 계란/샐러드", 
+            "L": "해장국, 닭볶음, 새우튀김, 두부구이, 어묵볶음, 오이무침", 
+            "D": "소고기구이, 부추전, 스파게티, 후렌치프라이, 과일샐러드" 
+        },
+        "2026-02-06": { 
+            "B": "미역국, 양배추샌드위치, 계란말이, 소시지양파구이, 계란 후라이, 삶은 계란/샐러드", 
+            "L": "신라면, 김밥, 햄버거, 후라이치킨, 고구마구이, 계란후라이", 
+            "D": "치킨 너겟, 콩나물국, 생선 튀김, 고등어 조림, 버섯 볶음, 오이샐러드" 
+        }
     };
 
-    // 두음법칙 매핑 테이블 (자주 쓰이는 것 위주)
+    // 두음법칙 매핑
     const DUEUM_MAP = {
         '라':'나', '락':'낙', '란':'난', '랄':'날', '람':'남', '랍':'납', '랑':'낭', 
         '래':'내', '랭':'냉', '로':'노', '록':'녹', '론':'논', '롱':'농', '뢰':'뇌', 
@@ -214,7 +251,7 @@
         '륙':'육', '륜':'윤', '률':'율', '륭':'융', '리':'이', '린':'인', '림':'임', '립':'입'
     };
 
-    let lastGameWord = ""; // 마지막 단어 저장용
+    let lastGameWord = ""; 
 
     function setTheme(t) { document.body.setAttribute('data-theme', t); localStorage.setItem('theme', t); }
     if(localStorage.getItem('theme')) setTheme(localStorage.getItem('theme'));
@@ -225,7 +262,12 @@
         const meal = MEAL_DATA[dateStr];
         let menu = "정보 없음";
         if (meal && meal[type]) menu = meal[type];
-        let label = (type === 'B') ? "조식" : (type === 'L') ? "중식" : "석식";
+        
+        let label = "";
+        if (type === 'B') label = "조식";
+        else if (type === 'L') label = "중식";
+        else label = "석식";
+        
         return { label: label, menu: menu };
     }
 
@@ -272,32 +314,54 @@
         }
 
         document.getElementById('remain-days').innerText = remainDays + "일";
+        
+        // [복구 완료] 초 단위 다시 포함
         document.getElementById('remain-work-hours').innerText = 
-            `${Math.floor(totalWorkSec/3600).toLocaleString()}시간 ${Math.floor((totalWorkSec%3600)/60)}분`;
+            `${Math.floor(totalWorkSec/3600).toLocaleString()}시간 ${Math.floor((totalWorkSec%3600)/60)}분 ${Math.floor(totalWorkSec%60)}초`;
 
         const dSec = document.getElementById('daily-section');
         if (isWorkingNow) {
             dSec.style.display = 'block'; 
             document.getElementById('daily-fill').style.width = dailyProg + "%";
             document.getElementById('daily-remain-text').innerText = 
-                `퇴근까지 ${String(Math.floor(dailyRem/3600)).padStart(2,'0')}:${String(Math.floor((dailyRem%3600)/60)).padStart(2,'0')}:${String(Math.floor(dailyRem%60)).padStart(2,'0')}`;
+                `오늘 퇴근까지 ${String(Math.floor(dailyRem/3600)).padStart(2,'0')}:${String(Math.floor((dailyRem%3600)/60)).padStart(2,'0')}:${String(Math.floor(dailyRem%60)).padStart(2,'0')} 남음`;
         } else { dSec.style.display = 'none'; }
 
-        // 식단 (2개 보여주기)
+        // --- 식단 로직 (기존 2번째 답변 로직 복구) ---
         const h = now.getHours();
         const ymd = now.toISOString().split('T')[0];
-        let m1Type = (h < 6) ? 'B' : (h < 13) ? 'L' : (h < 20) ? 'D' : 'NB';
-        let m1Date = ymd;
-        if(m1Type === 'NB') { m1Type = 'B'; let t = new Date(now); t.setDate(t.getDate()+1); m1Date = t.toISOString().split('T')[0]; }
+        
+        let m1Date = ymd, m1Type = 'B';
+        
+        if (h < 6) { m1Type = 'B'; }
+        else if (h < 13) { m1Type = 'L'; }
+        else if (h < 20) { m1Type = 'D'; }
+        else { 
+            let t = new Date(now); t.setDate(t.getDate() + 1);
+            m1Date = t.toISOString().split('T')[0];
+            m1Type = 'B';
+        }
 
-        let m2Date = m1Date, m2Type = (m1Type === 'B') ? 'L' : (m1Type === 'L') ? 'D' : 'NB';
-        if(m2Type === 'NB') { m2Type = 'B'; let t = new Date(m1Date); t.setDate(t.getDate()+1); m2Date = t.toISOString().split('T')[0]; }
+        let m2Date = m1Date, m2Type = 'B';
+        if (m1Type === 'B') { m2Type = 'L'; }
+        else if (m1Type === 'L') { m2Type = 'D'; }
+        else { 
+            let t = new Date(m1Date); t.setDate(t.getDate() + 1);
+            m2Date = t.toISOString().split('T')[0];
+            m2Type = 'B';
+        }
 
         const info1 = getMealInfo(m1Date, m1Type);
         const info2 = getMealInfo(m2Date, m2Type);
-        document.getElementById('meal-1-type').innerText = `${(m1Date===ymd)?"오늘":"내일"} ${info1.label}`;
+
+        let dayStr1 = (m1Date === ymd) ? "오늘" : "내일";
+        let dayStr2 = (m2Date === ymd) ? "오늘" : "내일";
+        if (m1Date !== ymd && m2Date !== m1Date) dayStr2 = "모레";
+
+        document.getElementById('meal-1-type').innerText = `${dayStr1} ${info1.label}`;
         document.getElementById('meal-1-content').innerText = info1.menu;
-        document.getElementById('meal-2-type').innerText = `${(m2Date===ymd)?"오늘": (m2Date===m1Date)?"내일":"모레"} ${info2.label}`;
+
+        document.getElementById('meal-2-type').innerText = `${dayStr2} ${info2.label}`;
         document.getElementById('meal-2-content').innerText = info2.menu;
     }
 
@@ -308,17 +372,20 @@
         
         // 1. 메모 로딩
         fetch(SCRIPT_URL + "?action=get").then(r=>r.json()).then(data => {
-            document.getElementById('memo-list').innerHTML = data.map(m => `
+            const list = document.getElementById('memo-list');
+            list.innerHTML = data.map(m => `
                 <li class="list-item">
                     <div style="padding-right: 50px; line-height: 1.4;">${m.text}</div>
                     <div class="date-label">${m.date}</div>
                     <div class="like-container" onclick="likeMemo(${m.id})">
-                        <span style="font-size:1rem;">❤️</span><span style="font-size:0.85rem; font-weight:bold;">${m.likes||0}</span>
+                        <span style="font-size:1rem;">❤️</span>
+                        <span class="like-count">${m.likes || 0}</span>
                     </div>
-                </li>`).reverse().join('');
+                </li>
+            `).reverse().join('');
         }).catch(e=>{});
 
-        // 2. 끝말잇기 로딩 (action=getGame)
+        // 2. 끝말잇기 로딩
         fetch(SCRIPT_URL + "?action=getGame").then(r=>r.json()).then(data => {
             const list = document.getElementById('game-list');
             list.innerHTML = data.map(w => `
@@ -354,32 +421,25 @@
         const status = document.getElementById('game-status');
         let word = input.value.trim();
 
-        // 1. 기본 유효성 검사
         if(!word) return;
         if(word.includes(" ")) { status.innerText = "⚠️ 띄어쓰기는 사용할 수 없습니다."; return; }
         if(!/^[가-힣]+$/.test(word)) { status.innerText = "⚠️ 한글만 입력해주세요."; return; }
         if(word.length < 2) { status.innerText = "⚠️ 두 글자 이상 입력해주세요."; return; }
 
-        // 2. 끝말잇기 규칙 검사
         if (lastGameWord) {
-            const lastChar = lastGameWord.slice(-1); // 이전 단어 끝 글자
-            const firstChar = word[0]; // 입력 단어 첫 글자
-            
-            // 두음법칙 적용된 예상 글자
+            const lastChar = lastGameWord.slice(-1); 
+            const firstChar = word[0]; 
             const dueumChar = DUEUM_MAP[lastChar] || lastChar;
 
-            // 정석대로 같거나, 두음법칙으로 같아야 함
             if (firstChar !== lastChar && firstChar !== dueumChar) {
                 status.innerText = `⚠️ '${lastChar}'(으)로 시작해야 합니다. (두음법칙: '${dueumChar}' 허용)`;
                 return;
             }
         }
 
-        // 통과
         status.innerText = "";
         input.value = "";
         
-        // 화면에 즉시 반영 (낙관적 업데이트)
         const list = document.getElementById('game-list');
         list.insertAdjacentHTML('afterbegin', `<div class="word-bubble" style="opacity:0.5">${word}</div>`);
         
@@ -387,13 +447,12 @@
         loadData();
     }
 
-    // Enter 키 입력 지원
     document.getElementById('game-input').addEventListener("keypress", function(e) {
         if(e.key === "Enter") submitWord();
     });
 
     setInterval(update, 50);
-    setInterval(loadData, 2000); // 2초마다 데이터 갱신
+    setInterval(loadData, 2000); 
     update(); loadData();
 </script>
 </body>
